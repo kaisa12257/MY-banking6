@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>my-Banking 💰</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+</head>
+<body>
+
+<header>
+    <h1>💰 My-Banking <span id="userDisplayName"></span></h1>
+    <div id="authBox">
+        <button onclick="openModal('signupModal')" class="btn-auth">회원가입</button>
+        <button onclick="openModal('loginModal')" class="btn-auth login">로그인</button>
+    </div>
+<!-- ⚙️ 버튼으로 교체 -->
+<div id="userMenu" style="display:none;">
+    <button onclick="openSettingsModal()" style="position: relative; z-index: 999; background:none; border:none; color:white; font-size:1.5rem; cursor:pointer; padding: 5px 10px;">⚙️(설정)</button>
+</div>
+</header>
+<div id="welcomeScreen">
+   <div class="piggy-bank-large">🐷</div>
+    <div class="welcome-text-group">
+        <h2>오늘의 소비를 기록, 기획해 보세요!</h2>
+        <p>스마트한 나만의 자산 관리의 시작, My-Banking</p>
+    </div>
+</div>
+<nav id="topNav" style="display:none;">
+    <button onclick="showTab('record')" class="tab-btn active">📝 기록</button>
+    <button onclick="showTab('fixed')" class="tab-btn">💳 고정 지출</button>
+    <button onclick="showTab('calendar')" class="tab-btn">📅 달력</button>
+    <button onclick="showTab('stats')" class="tab-btn">📊 통계</button>
+    <button onclick="showTab('goal')" class="tab-btn">🐷 저축</button>
+</nav>
+
+<main id="mainContent" style="display:none;">
+
+    <section id="tab-record" class="tab-content">
+        <div class="card">
+            <h3>소비 기록</h3>
+            <input type="date" id="expDate" style="width:100%; margin-bottom:10px;">
+            <input type="number" id="amt" placeholder="금액 (원)">
+            <select id="cat" style="width:100%; margin:10px 0;">
+                <option value="식비">🍱 식비</option>
+                <option value="교통비">🚌 교통비</option>
+                <option value="주거/통신">🏠 주거/통신</option>
+                <option value="쇼핑/패션">🛍️ 쇼핑/패션</option>
+                <option value="생활용품">🧻 생활용품</option>
+                <option value="의료/건강">🏥 의료/건강</option>
+                <option value="여가생활">🎬 여가생활</option>
+                <option value="자기계발">📚 자기계발</option>
+                <option value="기타">🎸 기타</option>
+            </select>
+            <input type="text" id="desc" placeholder="내용">
+            <button onclick="saveExp()" class="btn-save" style="margin-top:10px;">저장하기</button>
+        </div>
+        <div id="overLimitDisplay" style="text-align: center; font-weight: bold; margin-bottom: 10px; color: var(--danger);"></div>
+        <div id="listArea" class="card"></div>
+    </section>
+
+    <section id="tab-fixed" class="tab-content" style="display:none;">
+        <div class="card">
+            <h3>💰 월별 목표 예산 설정</h3>
+            <div style="display:flex; gap:5px; margin-bottom:10px;">
+                <input type="month" id="budgetMonth" style="flex:1;">
+                <input type="number" id="monthlyBudget" placeholder="예산(원)" style="flex:1.5;">
+            </div>
+            <button onclick="saveBudget()" class="btn-save" style="background:var(--dark);">예산 저장</button>
+        </div>
+        <div id="budgetListArea" class="card"></div>
+        <div class="card">
+            <h3>💳 고정 지출 등록</h3>
+            <input type="text" id="fixedDesc" placeholder="내역 (예: 휴대폰비)">
+            <input type="number" id="fixedAmt" placeholder="금액 (원)">
+            <label style="font-size:0.8rem; color:gray;">결제일 선택</label>
+            <input type="date" id="fixedDate" style="width:100%; margin-bottom:10px;">
+            <button onclick="saveFixedExp()" class="btn-save" style="margin-top:10px; background:var(--primary);">등록하기</button>
+        </div>
+        <div id="fixedListArea" class="card"></div>
+    </section>
+
+    <section id="tab-calendar" class="tab-content" style="display:none;">
+        <div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <button onclick="changeMonth(-1)" class="btn-nav">◀</button>
+                <h3 id="calTitle" style="margin:0;"></h3>
+                <button onclick="changeMonth(1)" class="btn-nav">▶</button>
+            </div>
+            <div id="calSummary" style="margin: 15px 0; padding: 15px; background: #fff; border-radius: 12px; border: 2px solid #eee; text-align: center;">
+                <span style="font-size: 1rem; color: #666;">💰 남은 사용액 : </span>
+                <b id="remainingDisplay" style="font-size: 1.2rem; color: var(--primary);">0원</b>
+            </div>
+            
+            <div class="cal-header">
+                <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
+            </div>
+            <div id="calGrid" class="cal-grid"></div>
+        </div>
+    </section>
+
+    <section id="tab-stats" class="tab-content" style="display:none;">
+    <div id="animalCard" class="card" style="display:none;"></div>
+
+    <div class="card">
+        <canvas id="chartCanvas"></canvas>
+    </div>
+    </section>
+
+    <section id="tab-goal" class="tab-content" style="display:none;">
+        <div id="statusCard" class="card"></div>
+
+        <div class="card">
+            <h3>🐷 저축하기</h3>
+            <input type="number" id="savAmt" placeholder="저축 금액 (원)">
+            <select id="savType" style="width:100%; margin:10px 0;">
+                <option value="자유">🔓 자유 저축</option>
+                <option value="고정">🔒 고정 저축</option>
+            </select>
+            <button onclick="saveSavings()" class="btn-save">저축 저장</button>
+        </div>
+
+        <div class="card" style="border: 1px solid #ffcccc;">
+            <h3 style="color: var(--danger);">💸 급한 돈 인출</h3>
+            <input type="number" id="withdrawAmt" placeholder="인출 금액 (원)">
+            <input type="text" id="withdrawDesc" placeholder="인출 사유 (예: 경조사)" style="margin: 10px 0; width: 100%;">
+            <button onclick="withdrawSavings()" class="btn-save" style="background: var(--danger);">인출하기</button>
+            <p style="font-size: 0.8rem; color: gray; margin-top: 5px;">* 자유 저축 잔액 내에서만 인출 가능합니다.</p>
+        </div>
+
+        <div id="savListArea" class="card"></div>
+    </section>
+</main>
+
+<div id="detailModal" class="modal">
+    <div class="modal-content">
+        <h3 id="detailDate">내역</h3>
+        <div id="detailList" style="max-height:250px; overflow-y:auto;"></div>
+        <button onclick="closeModal('detailModal')" class="btn-close-modal">닫기</button>
+    </div>
+</div>
+
+<div id="loginModal" class="modal">
+    <div class="modal-content">
+        <h2>로그인</h2>
+        <input id="l_em" type="email" placeholder="이메일">
+        <input id="l_pw" type="password" placeholder="비밀번호">
+        <button onclick="doLogin()" class="btn-primary-modal">로그인</button>
+        <button onclick="closeModal('loginModal')" class="btn-close-modal">닫기</button>
+    </div>
+</div>
+
+<div id="signupModal" class="modal">
+    <div class="modal-content">
+        <h2>회원가입</h2>
+        <input id="s_nm" type="text" placeholder="이름">
+        <input id="s_em" type="email" placeholder="이메일">
+        <input id="s_pw" type="password" placeholder="비밀번호">
+        <input id="s_pw_re" type="password" placeholder="비밀번호 확인">
+        <button onclick="doSignup()" class="btn-primary-modal">가입하기</button>
+        <button onclick="closeModal('signupModal')" class="btn-close-modal">닫기</button>
+    </div>
+</div>
+<div id="settingsModal" class="modal" onclick="if(event.target == this) closeModal('settingsModal')">
+    <div class="modal-content settings-card">
+        <div class="settings-header">
+            <div class="profile-avatar">👤</div>
+          <div class="profile-info">
+    <h3 id="setting-user-name">로딩 중...</h3>
+    </div>
+        </div>
+
+        <div class="settings-body">
+    <!-- 1. 계정 및 보안 섹션 -->
+<div class="settings-body">
+    <!-- [레이어 1] 메인 메뉴 목록 -->
+    <div id="settings-main-layer">
+        <div class="settings-section">
+            <!-- 계정 및 보안: 클릭 시 서브 레이어로 이동 -->
+            <div class="setting-item" onclick="showSubLayer('account-security')">
+                <span>🔐 계정 및 보안</span>
+                <span class="item-link">></span>
+            </div>
+
+            <!-- 개인화 설정 (나중에 확장 가능) -->
+            <div class="setting-item" onclick="alert('개인화 설정 준비 중입니다.')">
+                <span>🎨 개인화 설정</span>
+                <span class="item-link">></span>
+            </div>
+
+            <!-- 데이터 관리 (나중에 확장 가능) -->
+            <div class="setting-item" onclick="alert('데이터 관리 준비 중입니다.')">
+                <span>📊 데이터 관리</span>
+                <span class="item-link">></span>
+            </div>
+
+            <!-- 고객지원 및 정보 -->
+            <div class="setting-item" onclick="alert('고객지원 준비 중입니다.')">
+                <span>ℹ️ 고객지원 및 정보</span>
+                <span class="item-link">></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- [레이어 2] 상세 메뉴 목록 (처음엔 숨김) -->
+    <div id="settings-sub-layer" style="display: none;">
+        <div class="sub-layer-header">
+            <!-- 뒤로 가기 버튼 -->
+            <span class="back-btn" onclick="showMainLayer()">← 뒤로 가기</span>
+            <h4 id="sub-layer-title">계정 및 보안</h4>
+        </div>
+
+        <div id="sub-layer-content">
+            <!-- 1. 이름 (수정 불가) -->
+            <div class="setting-item no-click">
+                <span>이름</span>
+                <span id="display-user-name" class="item-value">이재윤</span>
+            </div>
+
+            <!-- 2. 이메일 (마스킹 처리) -->
+            <div class="setting-item no-click">
+                <span>이메일</span>
+                <span id="display-user-email" class="item-value"></span>
+            </div>
+
+            <!-- 3. 비밀번호 재설정 -->
+            <div class="setting-item" onclick="alert('비밀번호 재설정 화면으로 이동합니다.')">
+                <span>비밀번호 재설정</span>
+                <span class="item-link">></span>
+            </div>
+
+            <!-- 4. 로그인 기록 확인 -->
+            <div class="setting-item" onclick="alert('최근 로그인 기록을 불러옵니다.')">
+                <span>로그인 기록 확인</span>
+                <span class="item-link">></span>
+            </div>
+
+            <!-- 5. 로그아웃 -->
+            <div class="setting-item danger-text" onclick="doLogout()">
+                <span>로그아웃</span>
+                <span class="item-link">></span>
+            </div>
+
+            <!-- 6. 회원 탈퇴 -->
+            <div class="setting-item danger-text" onclick="handleWithdrawal()">
+                <span>회원 탈퇴</span>
+                <span class="item-link">></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+        <div class="settings-footer">
+            <button onclick="doLogout()" class="btn-logout-full">로그아웃</button>
+        </div>
+    </div>
+</div>
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+
+</body>
+</html>
