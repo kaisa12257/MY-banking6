@@ -87,7 +87,18 @@ def do_login():
         })
     except:
         return jsonify({"status": "error", "message": "로그인 실패"}), 401
-
+@app.route('/api/reset-password-request', methods=['POST'])
+def reset_password_request():
+    data = request.json
+    email = data.get('email')
+    
+    try:
+        supabase.auth.reset_password_for_email(email, {
+            'redirect_to': 'https://my-banking-app-b81n.onrender.com/reset-password'
+        })
+        return jsonify({"status": "success", "message": "이메일이 발송되었습니다."})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 400
 @app.route('/api/logout', methods=['POST'])
 def do_logout():
     session.clear()
@@ -300,3 +311,6 @@ def get_savings():
         }), 500
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
+    @app.route('/reset-password')
+def reset_password_page():
+    return render_template('reset-password.html')

@@ -782,3 +782,33 @@ function maskEmail(email) {
     if (user.length <= 3) return email;
     return user.substring(0, 3) + "***" + "@" + domain;
 }
+// 비밀번호 재설정 이메일 요청 함수
+async function requestPasswordReset() {
+    // 세션이나 화면에 저장된 유저의 이메일을 가져옵니다.
+    // (이미 로그인된 상태이므로 세션에 저장된 이메일을 쓰는 것이 정확합니다.)
+    const userEmail = document.getElementById('display-user-email').innerText;
+
+    if (!userEmail || !confirm(`${userEmail} 주소로 비밀번호 재설정 링크를 보낼까요?`)) {
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/reset-password-request', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: userEmail })
+        });
+
+        const result = await response.json();
+
+        if (result.status === "success") {
+            alert("이메일이 발송되었습니다! 메일함을 확인해 주세요.");
+            closeModal('settingsModal'); // 설정 창 닫기
+        } else {
+            alert("오류 발생: " + result.message);
+        }
+    } catch (err) {
+        console.error("재설정 요청 중 에러:", err);
+        alert("서버 통신에 실패했습니다.");
+    }
+}
