@@ -309,8 +309,10 @@ def get_savings():
             "status": "error",
             "message": str(e)
         }), 500
-if __name__ == '__main__':
-    app.run(debug=True, port=5000)
-    @app.route('/reset-password')
+@app.route('/reset-password')
 def reset_password_page():
     return render_template('reset-password.html')
+if __name__ == '__main__':
+    app.run(debug=True, port=5000)
+    
+    
