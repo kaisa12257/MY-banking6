@@ -11,38 +11,35 @@ body { font-family: sans-serif; background: var(--bg); margin: 0; color: var(--d
 header {
     background: var(--dark); color: white; padding: 15px 25px;
     display: flex; justify-content: space-between; align-items: center;
-    position: relative; /* 자식인 userMenu의 기준점이 됨 */
+    position: relative;
 }
 
-/* 탭 메뉴 */
 #topNav { background: white; display: flex; justify-content: center; border-bottom: 1px solid #ddd; position: sticky; top: 0; z-index: 50; }
 .tab-btn { padding: 15px 20px; border: none; background: none; font-weight: bold; cursor: pointer; color: gray; }
 .tab-btn.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
 
-/* --- 모달 기본 스타일 --- */
 .modal {
     display: none; position: fixed; z-index: 100;
     left: 0; top: 0; width: 100%; height: 100%;
     background: rgba(0,0,0,0.5); 
-    align-items: center;       /* 기본적으로 중앙 정렬 */
+    align-items: center;
     justify-content: center;
 }
 
-/* --- ⭐ 설정 모달 전용: 오른쪽 배치 스타일 --- */
 #settingsModal {
-    background: transparent;   /* 배경 어두워지는 거 싫으면 투명하게, 원하면 유지 */
-    align-items: flex-start;   /* 위쪽 정렬 */
-    justify-content: flex-end; /* 오른쪽 정렬 */
-    pointer-events: none;      /* 뒤에 내용 클릭 가능하게 (선택) */
+    background: transparent;
+    align-items: flex-start;
+    justify-content: flex-end;
+    pointer-events: none;
 }
 
 #settingsModal .modal-content {
-    pointer-events: auto;      /* 모달 안은 클릭 가능하게 */
+    pointer-events: auto;
     position: absolute;
-    top: 70px;                 /* 헤더 높이만큼 아래로 */
-    right: 20px;               /* 오른쪽 벽에서 띄움 */
+    top: 70px;
+    right: 20px;
     margin: 0;
-    width: 280px;              /* 조금 더 슬림하게 */
+    width: 280px;
     box-shadow: 0 10px 25px rgba(0,0,0,0.2);
     animation: slideDown 0.3s ease-out;
 }
@@ -52,8 +49,6 @@ header {
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* ----------------------- */
-
 .modal-content {
     background: white; padding: 25px;
     border-radius: 15px; width: 320px;
@@ -62,7 +57,6 @@ header {
 
 input, select { padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; width: 100%; }
 
-/* 버튼 공통 */
 button { cursor: pointer; border: none; font-weight: bold; transition: opacity 0.2s; }
 button:hover { opacity: 0.9; }
 
@@ -73,7 +67,6 @@ button:hover { opacity: 0.9; }
 .btn-close-modal { background: none; color: gray; text-decoration: underline; margin-top: 10px; }
 .btn-nav { background: #eee; padding: 5px 10px; border-radius: 5px; }
 
-/* 저축/인출 섹션 */
 .savings-section {
     display: flex; flex-direction: column; gap: 10px; padding: 15px;
     background: #fdfdfd; border-radius: 10px; border: 1px solid #eee; margin-bottom: 15px;
@@ -87,19 +80,16 @@ button:hover { opacity: 0.9; }
 .btn-deposit { background: var(--primary); }
 .btn-withdraw { background: var(--danger); }
 
-/* 메인 구조 */
 #mainContent { max-width: 500px; margin: 30px auto; padding: 0 15px; }
 .card { background: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
 .btn-save { width: 100%; padding: 15px; background: var(--success); color: white; border-radius: 8px; }
 
-/* 리스트 아이템 */
 .list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #eee; }
 .list-info { display: flex; flex-direction: column; gap: 4px; }
 .list-desc { font-size: 0.9rem; color: #333; }
 .list-meta { font-size: 0.75rem; color: #888; }
 .list-item b { font-size: 1rem; min-width: 80px; text-align: right; }
 
-/* 달력 스타일 */
 .cal-header { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-weight: bold; font-size: 0.8rem; padding-bottom: 10px; color: #888; }
 .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; background: #eee; border: 1px solid #eee; }
 .cal-day { 
@@ -114,34 +104,30 @@ button:hover { opacity: 0.9; }
     width: 100%; text-align: center; border-radius: 3px; padding: 2px 0;
 }
 
-/* 통계 동물 박스 */
 .animal-box{ display:flex; align-items:center; gap:20px; }
 .animal-box img{ width:100px; height:100px; object-fit:contain; }
 .animal-info h3{ margin:0 0 8px 0; }
 .animal-info p{ margin:0; color:#666; line-height:1.5; }
-/* 돼지 저금통 통통 튀는 애니메이션 */
-/* 시작 화면 중앙 정렬 및 배경 */
+
 #welcomeScreen {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    min-height: 60vh; /* 화면 높이의 60%를 차지해서 중앙에 오게 함 */
+    min-height: 60vh;
     text-align: center;
     padding: 20px;
 }
 
-/* 돼지 크기를 엄청 크게! */
 .piggy-bank-large {
-    font-size: 12rem; /* 숫자를 키울수록 더 커져 */
+    font-size: 12rem;
     margin-bottom: 30px;
     line-height: 1;
-    /* 움직임 대신 은은한 그림자만 줘서 입체감을 살렸어 */
     filter: drop-shadow(0 15px 15px rgba(0,0,0,0.1));
 }
 
 .welcome-text-group h2 {
-    font-size: 2.2rem; /* 글자 크기도 돼지에 맞춰 키움 */
+    font-size: 2.2rem;
     font-weight: 900;
     color: var(--dark);
     margin-bottom: 15px;
@@ -153,12 +139,11 @@ button:hover { opacity: 0.9; }
     color: #888;
 }
 
-/* 텍스트에도 부드러운 효과 */
 #welcomeScreen h2 {
     letter-spacing: -1px;
-    word-break: keep-all; /* 한글 줄바꿈 예쁘게 */
+    word-break: keep-all;
 }
-/* --- 설정 모달 전용 디자인 --- */
+
 .settings-card {
     background: #fff;
     border-radius: 24px !important;
@@ -169,7 +154,7 @@ button:hover { opacity: 0.9; }
 }
 
 .settings-header {
-    background: #2c3e50; /* 네이비 톤 */
+    background: #2c3e50;
     color: white;
     padding: 25px 20px;
     display: flex;
@@ -201,35 +186,24 @@ button:hover { opacity: 0.9; }
     cursor: pointer;
 }
 
-/* 언어 선택창 */
-.lang-select {
-    padding: 3px 8px;
-    border-radius: 5px;
-    border: 1px solid #ddd;
-    font-size: 0.85rem;
-}
-
-/* 데이터 관리 버튼 */
 .btn-sub-action {
     width: 100%; text-align: left; padding: 10px 0; background: none; border: none; font-size: 0.9rem; cursor: pointer;
 }
 .btn-sub-action.danger { color: #e74c3c; border-bottom: 1px solid #f9f9f9; }
 .btn-sub-action.danger-light { color: #ff7675; }
 
-/* 로그아웃 버튼 */
 .settings-footer { padding: 15px 20px; background: #f9f9f9; }
 .btn-logout-full {
     width: 100%; padding: 12px; border-radius: 10px; border: none; background: #ddd; color: #333; font-weight: bold; cursor: pointer;
 }
 
-/* --- 토글 스위치 CSS --- */
 .switch { position: relative; display: inline-block; width: 34px; height: 18px; }
 .switch input { opacity: 0; width: 0; height: 0; }
 .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
 .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%; }
 input:checked + .slider { background-color: #3498db; }
 input:checked + .slider:before { transform: translateX(16px); }
-/* 클릭 불가능한 정보 항목 */
+
 .setting-item.no-click {
     cursor: default;
     background: transparent;
@@ -240,7 +214,6 @@ input:checked + .slider:before { transform: translateX(16px); }
     font-size: 0.9rem;
 }
 
-/* 위험/주의 항목 (로그아웃, 탈퇴) */
 .danger-text {
     color: #e74c3c !important;
 }
@@ -248,3 +221,21 @@ input:checked + .slider:before { transform: translateX(16px); }
 .danger-text .item-link {
     color: #e74c3c;
 }
+
+body.dark {
+    background: #1a1a2e;
+    color: #eee;
+}
+body.dark header { background: #0f0f1a; }
+body.dark #topNav { background: #16213e; border-bottom: 1px solid #333; }
+body.dark .tab-btn { color: #aaa; }
+body.dark .tab-btn.active { color: var(--primary); }
+body.dark .card { background: #16213e; box-shadow: 0 2px 5px rgba(0,0,0,0.4); }
+body.dark input, body.dark select { background: #0f0f1a; color: #eee; border: 1px solid #444; }
+body.dark .modal-content { background: #16213e; color: #eee; }
+body.dark .list-item { border-bottom: 1px solid #333; }
+body.dark .settings-card { background: #16213e; }
+body.dark .settings-footer { background: #0f0f1a; }
+body.dark .settings-section h4 { color: #777; border-bottom: 1px solid #333; }
+body.dark .setting-item { color: #eee; }
+body.dark .btn-logout-full { background: #333; color: #eee; }

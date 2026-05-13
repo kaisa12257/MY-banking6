@@ -32,7 +32,6 @@ def signup():
     email = data['email']
     
     try:
-        # 탈퇴 기록 테이블(withdrawn_users)에서 해당 이메일의 마지막 탈퇴일 조회
         res = supabase.table('withdrawn_users') \
             .select("withdrawn_at") \
             .eq("email", email) \
@@ -41,11 +40,9 @@ def signup():
             .execute()
         
         if res.data:
-            # 문자열 형태의 시간을 파이썬 datetime 객체로 변환
             withdraw_time_str = res.data[0]['withdrawn_at'].replace('Z', '').split('+')[0]
             withdraw_time = datetime.fromisoformat(withdraw_time_str)
             
-            # 현재 시간과 비교하여 2일(48시간)이 지났는지 체크
             if datetime.now() < withdraw_time + timedelta(days=2):
                 diff = (withdraw_time + timedelta(days=2)) - datetime.now()
                 hours = int(diff.total_seconds() // 3600)
@@ -54,7 +51,6 @@ def signup():
                     "message": f"탈퇴한 지 얼마 되지 않았습니다. 약 {hours}시간 뒤에 가입 가능합니다."
                 }), 400
 
-        # 탈퇴 기록이 없거나 2일이 지났다면 기존 가입 로직 진행
         supabase.auth.sign_up({
             "email": data['email'],
             "password": data['password'],
@@ -77,16 +73,29 @@ def do_login():
         user = res.user
         session['user_id'] = user.id
         session['user_name'] = user.user_metadata.get('display_name', '사용자')
-        session['user_email'] = user.email  # 세션에 이메일 저장 (탈퇴 시 사용)
+        session['user_email'] = user.email
         
         return jsonify({
             "status": "success", 
             "user_name": session['user_name'],
             "user_email": user.email,
-            "joined_at": user.created_at  # 가입 날짜 전달
+            "joined_at": user.created_at
         })
-    except:
-        return jsonify({"status": "error", "message": "로그인 실패"}), 401
+
+    except Exception as e:
+        error_msg = str(e)
+        if "Invalid login credentials" in error_msg:
+            message = "이메일 또는 비밀번호가 올바르지 않습니다."
+        elif "Email not confirmed" in error_msg:
+            message = "이메일 인증이 완료되지 않았습니다. 메일함을 확인해 주세요."
+        elif "User not found" in error_msg:
+            message = "등록되지 않은 이메일입니다."
+        else:
+            message = "로그인 중 오류가 발생했습니다."
+        
+        return jsonify({"status": "error", "message": message}), 401
+
+
 @app.route('/api/reset-password-request', methods=['POST'])
 def reset_password_request():
     data = request.json
@@ -94,11 +103,18 @@ def reset_password_request():
     
     try:
         supabase.auth.reset_password_for_email(email, {
-            'redirect_to': 'https://my-banking-app-b81n.onrender.com/reset-password'
+            'redirect_to': 'http://127.0.0.1:5000/reset-password'
         })
         return jsonify({"status": "success", "message": "이메일이 발송되었습니다."})
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 400
+        error_msg = str(e)
+        if "For security purposes" in error_msg or "rate limit" in error_msg.lower():
+            message = "요청이 너무 잦습니다. 잠시 후 다시 시도해주세요."
+        else:
+            message = "이메일 발송 중 오류가 발생했습니다."
+        return jsonify({"status": "error", "message": message}), 400
+
+
 @app.route('/api/logout', methods=['POST'])
 def do_logout():
     session.clear()
@@ -107,8 +123,10 @@ def do_logout():
     except:
         pass
     return jsonify({"status": "success"})
+
+
 # =========================
-# 3. 회원 탈퇴 API 추가
+# 회원 탈퇴
 # =========================
 @app.route('/api/withdraw', methods=['POST'])
 def withdraw():
@@ -118,14 +136,11 @@ def withdraw():
     user_id = session.get('user_id')
 
     try:
-        # A. 탈퇴 기록 테이블에 이메일과 현재 시간 저장
         supabase.table('withdrawn_users').insert({
             "email": email,
             "withdrawn_at": datetime.now().isoformat()
         }).execute()
 
-        # B. Supabase Auth에서 유저 삭제 (관리자 권한 필요)
-        # 서비스 롤 키를 사용하므로 admin 기능을 쓸 수 있음
         supabase.auth.admin.delete_user(user_id)
         
         session.clear()
@@ -134,6 +149,20 @@ def withdraw():
         print(f"탈퇴 에러: {e}")
         return jsonify({"status": "error", "message": "탈퇴 처리 중 오류가 발생했습니다."}), 500
 
+@app.route('/api/clear_all_data', methods=['POST'])
+def clear_all_data():
+    if 'user_id' not in session:
+        return jsonify({"status": "error"}), 401
+    
+    user_id = session['user_id']
+    try:
+        supabase.table('expenses').delete().eq("user_id", user_id).execute()
+        supabase.table('fixed_expenses').delete().eq("user_id", user_id).execute()
+        supabase.table('monthly_budgets').delete().eq("user_id", user_id).execute()
+        supabase.table('savings').delete().eq("user_id", user_id).execute()
+        return jsonify({"status": "success"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 # =========================
 # 지출 (Expenses)
 # =========================
@@ -309,10 +338,40 @@ def get_savings():
             "status": "error",
             "message": str(e)
         }), 500
+
+
 @app.route('/reset-password')
 def reset_password_page():
     return render_template('reset-password.html')
+
+@app.route('/api/add_login_log', methods=['POST'])
+def add_login_log():
+    if 'user_id' not in session:
+        return jsonify({"status": "error"}), 401
+    data = request.json
+    try:
+        supabase.table('login_logs').insert({
+            "user_id": session['user_id'],
+            "device_type": data.get('device_type', '알 수 없음'),
+            "browser": data.get('browser', '알 수 없음')
+        }).execute()
+        return jsonify({"status": "success"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route('/api/get_login_logs', methods=['GET'])
+def get_login_logs():
+    if 'user_id' not in session:
+        return jsonify({"status": "error"}), 401
+    try:
+        res = supabase.table('login_logs').select("*") \
+            .eq("user_id", session['user_id']) \
+            .order("logged_at", desc=True) \
+            .limit(10) \
+            .execute()
+        return jsonify({"status": "success", "data": res.data})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
-    
-    
