@@ -1,19 +1,53 @@
 let viewDate = new Date();
+
+
+// ↓ 여기에 추가
+function getViewMonthRange() {
+    const startDay = parseInt(localStorage.getItem('monthStartDay') || '1');
+    const year = viewDate.getFullYear();
+    const month = viewDate.getMonth();
+
+    let rangeStart, rangeEnd;
+
+    if (startDay === 1) {
+        rangeStart = new Date(year, month, 1);
+        rangeEnd = new Date(year, month + 1, 0);
+    } else {
+        rangeStart = new Date(year, month, startDay);
+        rangeEnd = new Date(year, month + 1, startDay - 1);
+    }
+
+    const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    return {
+        start: fmt(rangeStart),
+        end: fmt(rangeEnd),
+        monthStr: `${year}-${String(month+1).padStart(2,'0')}`
+    };
+}
 let fixedExpenses = [];
 let monthlyBudgets = {};
 
 function openModal(id) {
     document.getElementById(id).style.display = 'flex';
 }
-
 function closeModal(id) {
     document.getElementById(id).style.display = 'none';
+    // 배너 모달 닫으면 자동슬라이드 재시작
+    if (id === 'bannerDetailModal' && bannerList.length > 1) {
+        bannerTimer = setInterval(() => {
+            bannerIndex = (bannerIndex + 1) % bannerList.length;
+            showBanner(bannerIndex);
+        }, 5000);
+    }
 }
 
 function initDate() {
     const today = new Date().toISOString().split('T')[0];
     const month = today.substring(0, 7);
-    if (document.getElementById('expDate')) document.getElementById('expDate').value = today;
+    if (document.getElementById('expDate')) {
+        document.getElementById('expDate').value = today;
+        document.getElementById('expDate').max = today;  // ← 추가
+    }
     if (document.getElementById('fixedDate')) document.getElementById('fixedDate').value = today;
     if (document.getElementById('budgetMonth')) document.getElementById('budgetMonth').value = month;
 }
@@ -94,12 +128,14 @@ async function doLogin() {
             joinedAt: data.joined_at
         };
 
-        document.getElementById('userDisplayName').innerText = `(${data.user_name}님)`;
+       
         document.getElementById('welcomeScreen').style.display = 'none';
         document.getElementById('authBox').style.display = 'none';
         document.getElementById('userMenu').style.display = 'block';
         document.getElementById('topNav').style.display = 'flex';
         document.getElementById('mainContent').style.display = 'block';
+        document.getElementById('backBtn').style.display = 'block';
+       
 // 로그인 기록 저장
 const ua = navigator.userAgent;
 const device = /Mobi|Android/i.test(ua) ? '모바일' : 'PC';
@@ -120,15 +156,33 @@ await fetch('/api/add_login_log', {
         await loadList();
         await loadGoal();
         renderBudgetList();
+        fetch('/api/get_notices')
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    bannerList = data.data.filter(n => n.is_banner);
+                    if (bannerList.length > 0) {
+                        document.getElementById('noticeBanner').style.display = 'block';
+                        showBanner(0);
+                        bannerTimer = setInterval(() => {
+                            bannerIndex = (bannerIndex + 1) % bannerList.length;
+                            showBanner(bannerIndex);
+                        }, 5000);
+                    }
+                }
+            });
+
     } else {
         alert(data.message);
     }
+
 
     isLoggingIn = false;
 }
 
 async function doLogout() {
     await fetch('/api/logout', { method: 'POST' });
+    document.getElementById('backBtn').style.display = 'none';
     location.reload();
 }
 
@@ -140,15 +194,7 @@ function maskEmail(email) {
 }
 
 // 설정 모달 열 때 항상 메인 레이어로 초기화
-function openSettingsModal() {
-    try {
-        showMainLayer();
-    } catch(e) {}
-    document.getElementById('setting-user-name').textContent = window.userData?.name || '사용자';
-    document.getElementById('display-user-name').textContent = window.userData?.name || '';
-    document.getElementById('display-user-email').textContent = maskEmail(window.userData?.email || '');
-    openModal('settingsModal');
-}
+
 async function handleWithdrawal() {
     const firstCheck = confirm("정말로 My-Banking 서비스를 탈퇴하시겠습니까?");
     if (firstCheck) {
@@ -178,12 +224,17 @@ async function handleWithdrawal() {
 }
 
 // --- 지출 ---
+
 async function saveExp() {
     const amount = parseInt(document.getElementById('amt').value);
     const category = document.getElementById('cat').value;
     const description = document.getElementById('desc').value;
     const expense_date = document.getElementById('expDate').value;
     if (!amount || amount <= 0) return alert("금액을 올바르게 입력하세요.");
+
+    // 미래 날짜 차단 추가
+    const today = new Date().toISOString().split('T')[0];
+    if (expense_date > today) return alert("미래 날짜에는 지출을 입력할 수 없습니다.");
 
     await fetch('/api/add_expense', {
         method: 'POST',
@@ -358,8 +409,14 @@ async function renderCal() {
     const month = viewDate.getMonth();
     const viewMonthStr = `${year}-${(month + 1).toString().padStart(2, '0')}`;
 
-    const budgetForMonth = Number(monthlyBudgets[viewMonthStr] || 0);
-    const monthExpTotal = data.filter(e => e.expense_date.startsWith(viewMonthStr)).reduce((sum, e) => sum + Number(e.amount), 0);
+    const { start, end } = getViewMonthRange();
+const budgetMonth = start.substring(0, 7);
+const budgetForMonth = Number(monthlyBudgets[budgetMonth] || 0);
+   
+    
+const monthExpTotal = data
+    .filter(e => e.expense_date >= start && e.expense_date <= end)
+    .reduce((sum, e) => sum + Number(e.amount), 0);
     const remainingBudget = budgetForMonth - monthExpTotal;
 
     const remainingDisplay = document.getElementById('remainingDisplay');
@@ -393,7 +450,9 @@ async function renderCal() {
 
         dayDiv.innerHTML = `<span class="day-num">${d}</span>`;
         if (totalDisplayAmt > 0) {
-            let colorStyle = dayGeneralTotal <= dailyGoal ? "color: var(--success); font-weight: bold;" : "color: var(--danger); font-weight: bold;";
+            let colorStyle = dayGeneralTotal <= dailyGoal 
+    ? "color: var(--success); font-weight: bold;" 
+    : "color: var(--danger); font-weight: bold;";
             dayDiv.innerHTML += `<div class="cal-amt" style="${colorStyle}">${totalDisplayAmt.toLocaleString()}</div>`;
             dayDiv.onclick = () => {
                 document.getElementById('detailDate').innerText = `${dateStr} 내역`;
@@ -420,12 +479,14 @@ async function renderChart() {
     const month = viewDate.getMonth();
     const viewMonthStr = `${year}-${(month + 1).toString().padStart(2, '0')}`;
 
-    const monthlyExps = (result.data || []).filter(e => e.expense_date.startsWith(viewMonthStr));
+const { start, end } = getViewMonthRange();
+    const monthlyExps = (result.data || []).filter(e => e.expense_date >= start && e.expense_date <= end);
+    const monthlyFixed = fixedExpenses.filter(f => f.fixed_date >= start && f.fixed_date <= end);
     const animal = getMonthlyAnimal(result.data || [], viewMonthStr);
     renderAnimalCard(animal);
 
     let combinedData = monthlyExps.map(i => ({ category: i.category, amount: Number(i.amount) }));
-    const monthlyFixed = fixedExpenses.filter(f => f.fixed_date.startsWith(viewMonthStr));
+    
     monthlyFixed.forEach(f => combinedData.push({ category: '고정지출', amount: Number(f.amount) }));
 
     const cats = [...new Set(combinedData.map(i => i.category))];
@@ -465,13 +526,16 @@ async function loadGoal() {
 
     const currentViewMonth = `${viewDate.getFullYear()}-${(viewDate.getMonth() + 1).toString().padStart(2, '0')}`;
 
-    const budgetForMonth = monthlyBudgets[currentViewMonth] || 0;
-    const monthExpenseTotal = expData
-        .filter(e => e.expense_date.startsWith(currentViewMonth))
-        .reduce((sum, e) => sum + Number(e.amount), 0);
-    const totalFixedForMonth = fixedExpenses
-        .filter(f => f.fixed_date.startsWith(currentViewMonth))
-        .reduce((sum, f) => sum + Number(f.amount), 0);
+   const { start, end } = getViewMonthRange();
+const budgetMonth = start.substring(0, 7);
+const budgetForMonth = monthlyBudgets[budgetMonth] || 0;
+ 
+const monthExpenseTotal = expData
+    .filter(e => e.expense_date >= start && e.expense_date <= end)
+    .reduce((sum, e) => sum + Number(e.amount), 0);
+const totalFixedForMonth = fixedExpenses
+    .filter(f => f.fixed_date >= start && f.fixed_date <= end)
+    .reduce((sum, f) => sum + Number(f.amount), 0);
     const remainingBudget = budgetForMonth - monthExpenseTotal;
     const freeBalance = savData
         .filter(s => s.type === '자유')
@@ -605,6 +669,63 @@ async function clearAllData() {
         alert("서버 통신에 실패했습니다.");
     }
 }
+async function loadInquiries() {
+    const res = await fetch('/api/get_inquiries');
+    const data = await res.json();
+    if (data.status !== 'success') return '<p style="color:gray;">불러오는 중 오류가 발생했습니다.</p>';
+
+    const inquiries = data.data;
+    if (inquiries.length === 0) return '<p style="color:gray; font-size:0.85rem;">문의 내역이 없습니다.</p>';
+
+    return inquiries.map(i => `
+        <div class="list-item" style="flex-direction:column; align-items:flex-start; gap:5px;">
+            <div style="display:flex; justify-content:space-between; width:100%;">
+                <span style="font-weight:bold;">${i.title}</span>
+                <span style="font-size:0.75rem; color:${i.status === '답변 완료' ? 'green' : 'orange'};">${i.status}</span>
+            </div>
+            <span style="font-size:0.8rem; color:#888;">${new Date(i.created_at).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })}</span>
+            ${i.answer ? `<div style="background:#f0f8ff; padding:8px; border-radius:6px; font-size:0.85rem; width:100%; box-sizing:border-box;">💬 ${i.answer}</div>` : ''}
+        </div>
+    `).join('');
+}
+async function submitFaq() {
+    const question = document.getElementById('faqQuestion').value;
+    if (!question) return alert("질문을 입력하세요.");
+
+    const res = await fetch('/api/add_faq', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question })
+    });
+    const data = await res.json();
+    if (data.status === 'success') {
+        alert("질문이 등록되었습니다!");
+        document.getElementById('faqQuestion').value = '';
+        loadFaq();
+    } else {
+        alert("오류: " + data.message);
+    }
+}
+async function submitInquiry() {
+    const title = document.getElementById('inquiryTitle').value;
+    const content = document.getElementById('inquiryContent').value;
+    if (!title || !content) return alert("제목과 내용을 모두 입력하세요.");
+
+    const res = await fetch('/api/add_inquiry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, content })
+    });
+    const data = await res.json();
+    if (data.status === 'success') {
+        alert("문의가 접수되었습니다!");
+        document.getElementById('inquiryTitle').value = '';
+        document.getElementById('inquiryContent').value = '';
+        showSubLayer('support');
+    } else {
+        alert("오류: " + data.message);
+    }
+}
 async function loadLoginLogs() {
     const res = await fetch('/api/get_login_logs');
     const data = await res.json();
@@ -676,6 +797,7 @@ function openSettingsModal() {
     if (displayEmail) displayEmail.textContent = maskEmail(window.userData?.email || '');
     
     openModal('settingsModal');
+     loadShareCode();
 }
 // --- 설정 ---
 function showSubLayer(type) {
@@ -738,6 +860,7 @@ if (type === 'data-management') {
     `;
 }
 if (type === 'login-history') {
+    
     document.getElementById('sub-layer-title').innerText = '로그인 기록';
     document.getElementById('sub-layer-content').innerHTML = '<p style="color:gray;">불러오는 중...</p>';
     
@@ -745,7 +868,97 @@ if (type === 'login-history') {
         document.getElementById('sub-layer-content').innerHTML = html;
     });
 }
-    mainLayer.style.display = 'none';
+if (type === 'support') {
+    document.getElementById('sub-layer-title').innerText = '고객지원 및 정보';
+    document.getElementById('sub-layer-content').innerHTML = `
+        <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:15px;">
+            <input type="text" id="inquiryTitle" placeholder="제목" style="padding:10px; border:1px solid #ddd; border-radius:8px;">
+            <textarea id="inquiryContent" placeholder="문의 내용을 입력하세요" style="padding:10px; border:1px solid #ddd; border-radius:8px; height:100px; resize:none;"></textarea>
+            <button onclick="submitInquiry()" style="padding:12px; background:var(--primary); color:white; border-radius:8px; border:none; font-weight:bold;">문의 접수</button>
+        </div>
+        <h4 style="margin:10px 0 5px 0; font-size:0.85rem; color:#999;">내 문의 내역</h4>
+        <div id="inquiryList"><p style="color:gray;">불러오는 중...</p></div>
+    `;
+    loadInquiries().then(html => {
+        document.getElementById('inquiryList').innerHTML = html;
+    });
+}
+   
+    if (type === 'name-change') {
+    document.getElementById('sub-layer-title').innerText = '이름 변경';
+    document.getElementById('sub-layer-content').innerHTML = `
+        <div style="padding:10px 0;">
+            <p style="font-size:0.85rem; color:#888; margin-bottom:10px;">현재 이름: <b>${window.userData?.name || ''}</b></p>
+            <input type="text" id="newNameInput" placeholder="새 이름 입력" style="padding:10px; border:1px solid #ddd; border-radius:8px; width:100%; margin-bottom:10px;">
+            <button onclick="changeName()" style="width:100%; padding:12px; background:var(--primary); color:white; border-radius:8px; border:none; font-weight:bold;">변경하기</button>
+        </div>
+    `;
+}
+
+if (type === 'month-start') {
+    const current = localStorage.getItem('monthStartDay') || '1';
+    document.getElementById('sub-layer-title').innerText = '월 시작일 설정';
+    document.getElementById('sub-layer-content').innerHTML = `
+        <p style="font-size:0.85rem; color:#888; margin-bottom:15px;">
+            가계부 월 기준 시작일을 설정합니다.<br>
+            예) 25일로 설정 시 4/25~5/24가 한 달로 계산됩니다.
+        </p>
+        <select id="monthStartSelect" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; margin-bottom:10px;">
+            ${Array.from({length: 28}, (_, i) => i + 1).map(d => 
+                `<option value="${d}" ${String(d) === current ? 'selected' : ''}>${d}일</option>`
+            ).join('')}
+        </select>
+        <button onclick="saveMonthStart()" style="width:100%; padding:12px; background:var(--primary); color:white; border-radius:8px; border:none; font-weight:bold;">저장하기</button>
+    `;
+}
+
+if (type === 'app-info') {
+    document.getElementById('sub-layer-title').innerText = '앱 정보';
+    document.getElementById('sub-layer-content').innerHTML = `
+        <div style="padding:20px 0;">
+            <p style="font-size:0.95rem; font-weight:bold; margin-bottom:8px;">My-Banking</p>
+            <p style="font-size:0.85rem; color:#aaa;">버전 1.0.0</p>
+        </div>
+        <div class="setting-item" onclick="showSubLayer('privacy')">
+            <span>개인정보처리방침</span>
+            <span class="item-link">></span>
+        </div>
+        <div class="setting-item" onclick="showSubLayer('terms')">
+            <span>이용약관</span>
+            <span class="item-link">></span>
+        </div>
+    `;
+}
+
+if (type === 'privacy') {
+    document.getElementById('sub-layer-title').innerText = '개인정보처리방침';
+    document.getElementById('sub-layer-content').innerHTML = `
+        <div style="font-size:0.82rem; line-height:1.8; color:#555; overflow-y:auto; max-height:400px;">
+            <p><b>1. 수집하는 개인정보 항목</b><br>이메일, 이름, 지출/저축 데이터</p>
+            <p><b>2. 수집 및 이용 목적</b><br>서비스 제공, 회원 관리, 가계부 기능 운영</p>
+            <p><b>3. 보유 및 이용 기간</b><br>회원 탈퇴 시 즉시 삭제 (탈퇴 후 48시간 이내)</p>
+            <p><b>4. 제3자 제공</b><br>원칙적으로 제공하지 않으며, 법령에 따른 경우에만 예외적으로 제공합니다.</p>
+            <p><b>5. 처리 위탁</b><br>- 수탁업체: Supabase Inc.<br>- 위탁업무: 데이터 저장 및 관리</p>
+            <p><b>6. 정보주체의 권리</b><br>열람, 정정, 삭제, 처리정지 요구 권리가 있으며 고객지원으로 요청하실 수 있습니다.</p>
+            <p style="font-size:0.75rem; color:#aaa;">시행일: 2026년 5월 15일</p>
+        </div>
+    `;
+}
+
+if (type === 'terms') {
+    document.getElementById('sub-layer-title').innerText = '이용약관';
+    document.getElementById('sub-layer-content').innerHTML = `
+        <div style="font-size:0.82rem; line-height:1.8; color:#555; overflow-y:auto; max-height:400px;">
+            <p><b>제1조 목적</b><br>본 약관은 My-Banking 서비스 이용에 관한 조건 및 절차를 규정합니다.</p>
+            <p><b>제2조 서비스 이용</b><br>회원가입 후 모든 기능을 무료로 이용할 수 있습니다.</p>
+            <p><b>제3조 회원의 의무</b><br>타인의 정보를 도용하거나 서비스를 악용해서는 안 됩니다.</p>
+            <p><b>제4조 서비스 중단</b><br>시스템 점검, 장애 등으로 서비스가 일시 중단될 수 있습니다.</p>
+            <p><b>제5조 탈퇴 및 데이터 삭제</b><br>탈퇴 시 모든 데이터는 즉시 삭제되며 복구가 불가능합니다.<br>탈퇴 후 48시간 동안 동일 이메일로 재가입이 제한됩니다.</p>
+            <p style="font-size:0.75rem; color:#aaa;">시행일: 2026년 5월 15일</p>
+        </div>
+    `;
+}
+ mainLayer.style.display = 'none';
     subLayer.style.display = 'block';
 }
 
@@ -786,7 +999,84 @@ function toggleDarkMode(checkbox) {
     }
 }
 
-// --- 초기화 ---
+async function loadShareCode() {
+    const res = await fetch('/api/get_share_code');
+    const data = await res.json();
+    if (data.status === 'success') {
+        document.getElementById('myShareCode').innerText = data.code;
+    }
+}
+
+async function viewFriendData() {
+    const code = document.getElementById('friendCodeInput').value.trim();
+    if (code.length !== 6 || isNaN(code)) return alert("6자리 숫자 코드를 입력하세요.");
+
+    const res = await fetch('/api/view_by_code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code })
+    });
+    const data = await res.json();
+    if (data.status !== 'success') return alert(data.message);
+
+    window.viewMode = true;
+    window.viewData = data;
+
+    closeModal('settingsModal');
+
+    document.getElementById('welcomeScreen').style.display = 'none';
+    document.getElementById('authBox').style.display = 'none';
+    document.getElementById('topNav').style.display = 'flex';
+    document.getElementById('mainContent').style.display = 'block';
+    document.getElementById('viewModeBanner').style.display = 'block';
+    document.getElementById('viewModeUserName').innerText = data.user_name;
+
+    renderViewModeList(data.expenses);
+}
+
+function exitViewMode() {
+    window.viewMode = false;
+    window.viewData = null;
+    document.getElementById('viewModeBanner').style.display = 'none';
+    location.reload();
+}
+
+function renderViewModeList(expenses) {
+    const listArea = document.getElementById('listArea');
+    if (!expenses || expenses.length === 0) {
+        listArea.innerHTML = '<h4>최근 소비 내역</h4><p style="color:gray;">내역이 없습니다.</p>';
+        return;
+    }
+    listArea.innerHTML = '<h4>최근 소비 내역</h4>' + expenses.map(i => `
+        <div class="list-item">
+            <div style="display:flex; flex-direction:column;">
+                <span style="font-weight:bold;">[${i.category}] ${i.description || '내역 없음'}</span>
+                <span style="font-size:0.8rem; color:gray;">${i.expense_date}</span>
+            </div>
+            <span>${Number(i.amount).toLocaleString()}원</span>
+        </div>
+    `).join('');
+}
+let bannerList = [];
+let bannerIndex = 0;
+let bannerTimer = null;
+
+function showBanner(index) {
+    if (bannerList.length === 0) return;
+    const banner = bannerList[index];
+    document.getElementById('noticeBannerText').innerText = '📢 ' + banner.title;
+    document.getElementById('bannerCounter').innerText = `(${index + 1}/${bannerList.length})`;
+}
+
+function prevBanner() {
+    bannerIndex = (bannerIndex - 1 + bannerList.length) % bannerList.length;
+    showBanner(bannerIndex);
+}
+
+function nextBanner() {
+    bannerIndex = (bannerIndex + 1) % bannerList.length;
+    showBanner(bannerIndex);
+}
 window.onload = function () {
     if (!window.userData) {
         if (document.getElementById('welcomeScreen')) document.getElementById('welcomeScreen').style.display = 'flex';
@@ -798,3 +1088,104 @@ window.onload = function () {
         document.body.classList.add('dark');
     }
 };
+
+
+
+async function doFindEmail() {
+    const name = document.getElementById('find_name').value.trim();
+    if (!name) return alert("이름을 입력하세요.");
+
+    const res = await fetch('/api/find_email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+    });
+    const data = await res.json();
+    const resultEl = document.getElementById('findEmailResult');
+
+    if (data.status === 'success') {
+        resultEl.style.color = '#2ecc71';
+        resultEl.innerHTML = `찾은 이메일:<br>` +
+            data.hints.map(h => `<b>${h}</b>`).join('<br>');
+    } else {
+        resultEl.style.color = '#e74c3c';
+        resultEl.innerText = data.message;
+    }
+}
+async function doForgotPw() {
+    const email = document.getElementById('forgot_email').value.trim();
+    if (!email) return alert("이메일을 입력하세요.");
+
+    const res = await fetch('/api/reset-password-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+    });
+    const data = await res.json();
+    const resultEl = document.getElementById('forgotPwResult');
+
+    if (data.status === 'success') {
+        resultEl.style.color = '#2ecc71';
+        resultEl.innerText = '✅ 이메일을 발송했습니다! 메일함을 확인해주세요.';
+    } else {
+        resultEl.style.color = '#e74c3c';
+        resultEl.innerText = data.message;
+    }
+}
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && window.userData) {
+        loadBudgets();
+        loadFixedList();
+        loadList();
+    }
+});
+function openBannerDetail() {
+    const banner = bannerList[bannerIndex];
+    if (!banner) return;
+    document.getElementById('bannerDetailTitle').innerText = '📢 ' + banner.title;
+    document.getElementById('bannerDetailContent').innerText = banner.content;
+    
+    if (bannerTimer) {
+        clearInterval(bannerTimer);
+        bannerTimer = null;
+    }
+    openModal('bannerDetailModal');
+}
+async function changeName() {
+    const newName = document.getElementById('newNameInput').value.trim();
+    if (!newName) return alert("이름을 입력하세요.");
+    if (newName === window.userData?.name) return alert("현재 이름과 동일합니다.");
+
+    try {
+        const res = await fetch('/api/change_name', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: newName })
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+            window.userData.name = newName;
+            document.getElementById('setting-user-name').textContent = newName;
+            alert("이름이 변경되었습니다.");
+            showMainLayer();
+        } else {
+            alert("오류: " + data.message);
+        }
+    } catch (err) {
+        alert("서버 통신에 실패했습니다.");
+    }
+}
+
+function saveMonthStart() {
+    const day = document.getElementById('monthStartSelect').value;
+    localStorage.setItem('monthStartDay', day);
+    alert(`월 시작일이 ${day}일로 설정되었습니다.`);
+    showMainLayer();
+    loadBudgets().then(() => {
+        loadFixedList().then(() => {
+            renderCal();
+            loadGoal();
+            renderChart();
+        });
+    });
+}

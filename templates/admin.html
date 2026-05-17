@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My-Banking 관리자</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #2F80ED;
+            --danger: #EF4444;
+            --success: #22C55E;
+            --warning: #F59E0B;
+            --gray-100: #1B1F2A;
+            --gray-200: #232839;
+            --gray-400: #525A75;
+            --gray-500: #8B93AB;
+            --gray-600: #A8B0C8;
+            --gray-700: #374151;
+            --gray-800: #111827;
+            --sidebar-width: 220px;
+        }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f8fafc;
+            color: #1f2937;
+            display: flex;
+            min-height: 100vh;
+        }
+        #sidebar {
+            width: var(--sidebar-width);
+            background: white;
+            border-right: 1px solid #e5e7eb;
+            position: fixed;
+            top: 0; left: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar-logo {
+            padding: 24px 20px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .sidebar-logo h1 { font-size: 1rem; font-weight: 700; color: var(--primary); }
+        .sidebar-logo p { font-size: 0.72rem; color: var(--gray-400); margin-top: 3px; }
+        .nav-section {
+            padding: 16px 20px 6px;
+            font-size: 0.68rem;
+            font-weight: 700;
+            color: var(--gray-400);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 0.88rem;
+            color: var(--gray-600);
+            transition: background 0.15s;
+        }
+        .nav-item:hover { background: #f3f4f6; }
+        .nav-item.active { background: #eff6ff; color: var(--primary); font-weight: 600; }
+        .nav-item .icon { font-size: 1rem; width: 20px; text-align: center; }
+        .sidebar-footer {
+            padding: 16px 20px;
+            border-top: 1px solid #e5e7eb;
+            font-size: 0.78rem;
+            color: var(--gray-400);
+            margin-top: auto;
+        }
+        #main {
+            margin-left: var(--sidebar-width);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        #topbar {
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 0 28px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+        #topbar h2 { font-size: 1rem; font-weight: 600; }
+        #topbar .admin-badge {
+            background: #eff6ff;
+            color: var(--primary);
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+        #content { padding: 28px; flex: 1; }
+        .section { display: none; }
+        .section.active { display: block; }
+        .card {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 20px 24px;
+            margin-bottom: 20px;
+        }
+        .card h3 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #111827;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 18px 20px;
+        }
+        .stat-card .label { font-size: 0.78rem; color: var(--gray-500); margin-bottom: 6px; }
+        .stat-card .value { font-size: 1.6rem; font-weight: 700; }
+        .stat-card.blue .value { color: var(--primary); }
+        .stat-card.green .value { color: var(--success); }
+        .stat-card.orange .value { color: var(--warning); }
+        .stat-card.red .value { color: var(--danger); }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        th {
+            text-align: left;
+            padding: 10px 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--gray-500);
+            border-bottom: 1px solid #e5e7eb;
+            background: #f9fafb;
+        }
+        td {
+            padding: 12px 12px;
+            border-bottom: 1px solid #f3f4f6;
+            color: #111827;
+            vertical-align: top;
+        }
+        tr:hover td { background: #f9fafb; }
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 0.72rem;
+            font-weight: 600;
+        }
+        .badge.pending { background: #fffbeb; color: var(--warning); }
+        .badge.done { background: #f0fdf4; color: var(--success); }
+        .btn {
+            padding: 6px 14px;
+            border-radius: 6px;
+            border: none;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.15s;
+        }
+        .btn:hover { opacity: 0.85; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-gray { background: #e5e7eb; color: var(--gray-700); }
+        input[type="text"], textarea, select {
+            width: 100%;
+            padding: 9px 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 7px;
+            font-size: 0.85rem;
+            font-family: inherit;
+            color: var(--gray-800);
+            outline: none;
+            transition: border 0.15s;
+        }
+        input[type="text"]:focus, textarea:focus, select:focus { border-color: var(--primary); }
+        textarea { resize: vertical; min-height: 80px; }
+        .notice-item {
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 14px 16px;
+            margin-bottom: 10px;
+        }
+        .notice-item .notice-title { font-weight: 600; font-size: 0.9rem; margin-bottom: 4px; }
+        .notice-item .notice-content { font-size: 0.82rem; color: var(--gray-500); margin-bottom: 8px; line-height: 1.6; }
+        .loading { color: var(--gray-400); font-size: 0.85rem; padding: 20px 0; text-align: center; }
+        .answer-box {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 7px;
+            padding: 10px 12px;
+            font-size: 0.82rem;
+            color: #166534;
+            margin-top: 6px;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <script>emailjs.init("BdQtw6kzMnCpbyC1v");</script>
+</head>
+<body>
+
+<!-- 사이드바 -->
+<div id="sidebar">
+    <div class="sidebar-logo">
+        <h1>💰 My-Banking</h1>
+        <p>관리자 대시보드</p>
+    </div>
+    <div style="flex:1; overflow-y:auto;">
+        <div class="nav-section">메인</div>
+        <div class="nav-item active" onclick="showSection('dashboard')">
+            <span class="icon">📊</span> 통계 대시보드
+        </div>
+        <div class="nav-section">콘텐츠</div>
+        <div class="nav-item" onclick="showSection('faq')">
+            <span class="icon">❓</span> FAQ 관리
+        </div>
+        <div class="nav-item" onclick="showSection('inquiry')">
+            <span class="icon">✉️</span> 1:1 문의 관리
+            <span id="inquiry-badge" style="display:none; background:#ef4444; color:white; font-size:0.65rem; font-weight:700; padding:2px 6px; border-radius:20px; margin-left:auto;">0</span>
+        </div>
+        <div class="nav-item" onclick="showSection('notice')">
+            <span class="icon">📢</span> 공지사항 관리
+        </div>
+        <div class="nav-section">회원</div>
+        <div class="nav-item" onclick="showSection('users')">
+            <span class="icon">👥</span> 회원 목록
+        </div>
+        <div class="nav-section">로그</div>
+        <div class="nav-item" onclick="showSection('adminlogs')">
+            <span class="icon">🔐</span> 관리자 로그인 기록
+        </div>
+    </div>
+    <div class="sidebar-footer">
+        ljy203045@gmail.com<br>
+        <span style="color:#ef4444; cursor:pointer; margin-right:10px;" onclick="adminLogout()">로그아웃</span>
+        <span style="color:#9ca3af; cursor:pointer;" onclick="location.href='/'">← 메인으로</span>
+    </div>
+</div>
+
+<!-- 메인 -->
+<div id="main">
+    <div id="topbar">
+        <h2 id="topbar-title">통계 대시보드</h2>
+        <span class="admin-badge">🔐 관리자</span>
+    </div>
+
+    <div id="content">
+
+        <!-- 통계 대시보드 -->
+        <div id="section-dashboard" class="section active">
+            <div class="stats-grid">
+                <div class="stat-card blue">
+                    <div class="label">전체 회원 수</div>
+                    <div class="value" id="stat-users">-</div>
+                </div>
+                <div class="stat-card green">
+                    <div class="label">전체 지출 건수</div>
+                    <div class="value" id="stat-expenses">-</div>
+                </div>
+                <div class="stat-card orange">
+                    <div class="label">미답변 문의</div>
+                    <div class="value" id="stat-inquiries">-</div>
+                </div>
+                <div class="stat-card red">
+                    <div class="label">FAQ 등록 수</div>
+                    <div class="value" id="stat-faqs">-</div>
+                </div>
+            </div>
+<!-- 탈퇴 통계 카드 -->
+<div class="card">
+    <h3>🗑️ 탈퇴 사유 통계</h3>
+    <div id="withdrawal-stats" style="display:flex; gap:20px; align-items:center; flex-wrap:wrap;">
+        <div class="loading">불러오는 중...</div>
+    </div>
+</div>
+        <div class="card">
+    <h3>📈 회원 가입 추이
+        <span id="signup-range-label" style="font-size:0.78rem; color:#9ca3af; font-weight:400; margin-left:8px;"></span>
+    </h3>
+    <div style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">
+        
+ <button class="btn btn-primary" id="range-30" onclick="setSignupRange(30)">최근 1달</button>
+<button class="btn btn-gray" id="range-180" onclick="setSignupRange(180)">최근 6개월</button>
+<button class="btn btn-gray" id="range-365" onclick="setSignupRange(365)">최근 1년</button>
+    </div>
+    <canvas id="signupChart" height="100"></canvas>
+    <div id="signup-detail" style="margin-top:16px; font-size:0.85rem; color:#6b7280;"></div>
+</div>
+
+            <div class="card">
+                <h3>최근 1:1 문의</h3>
+                <div id="dashboard-inquiry-list"><div class="loading">불러오는 중...</div></div>
+            </div>
+        </div>
+
+        <!-- FAQ 관리 -->
+        <div id="section-faq" class="section">
+            <div class="card">
+                <h3>FAQ 답변 등록</h3>
+                <div id="faq-list"><div class="loading">불러오는 중...</div></div>
+            </div>
+        </div>
+
+        <!-- 1:1 문의 -->
+        <div id="section-inquiry" class="section">
+            <div class="card">
+                <h3>1:1 문의 목록</h3>
+                <div id="inquiry-list"><div class="loading">불러오는 중...</div></div>
+            </div>
+        </div>
+
+        <!-- 공지사항 -->
+        <div id="section-notice" class="section">
+            <div class="card">
+                <h3>공지사항 작성</h3>
+                <div style="margin-bottom:10px;">
+                    <input type="text" id="noticeTitle" placeholder="제목" style="margin-bottom:8px;">
+                    <textarea id="noticeContent" placeholder="내용"></textarea>
+                    <div style="display:flex; align-items:center; gap:10px; margin-top:10px;">
+                        <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:0.85rem;">
+                            <input type="checkbox" id="isBanner" style="width:auto;">
+                            💡 메인 화면 배너로도 표시
+                        </label>
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="saveNotice()">등록하기</button>
+            </div>
+            <div class="card">
+                <h3>공지사항 목록</h3>
+                <div id="notice-list"><div class="loading">불러오는 중...</div></div>
+            </div>
+        </div>
+
+        <!-- 회원 목록 -->
+        <div id="section-users" class="section">
+            <div class="card">
+                <h3>현재 회원 목록</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>이름</th>
+                            <th>이메일</th>
+                            <th>가입일</th>
+                            <th>최근 로그인</th>
+                            <th>관리</th>
+                        </tr>
+                    </thead>
+                    <tbody id="user-list">
+                        <tr><td colspan="5" class="loading">불러오는 중...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="card">
+                <h3>탈퇴 회원 목록</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>이메일</th>
+                            <th>탈퇴일</th>
+                            <th>탈퇴 구분</th>
+                            <th>재가입 가능 여부</th>
+                        </tr>
+                    </thead>
+                    <tbody id="withdrawn-list">
+                        <tr><td colspan="4" class="loading">불러오는 중...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 관리자 로그인 기록 -->
+        <div id="section-adminlogs" class="section">
+            <div class="card">
+                <h3>🔐 관리자 로그인 기록</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>로그인 시각</th>
+                            <th>IP 주소</th>
+                            <th>기기 유형</th>
+                            <th>브라우저</th>
+                            <th>상태</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminlog-list">
+                        <tr><td colspan="5" class="loading">불러오는 중...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+let cachedUsers = null;
+const SECTIONS = ['dashboard', 'faq', 'inquiry', 'notice', 'users', 'adminlogs'];
+const TITLES = {
+    dashboard: '통계 대시보드',
+    faq: 'FAQ 관리',
+    inquiry: '1:1 문의 관리',
+    notice: '공지사항 관리',
+    users: '회원 목록',
+    adminlogs: '관리자 로그인 기록'
+};
+
+function showSection(name) {
+    SECTIONS.forEach(s => {
+        document.getElementById(`section-${s}`).classList.remove('active');
+    });
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById(`section-${name}`).classList.add('active');
+    document.getElementById('topbar-title').innerText = TITLES[name];
+    event.currentTarget.classList.add('active');
+
+    if (name === 'dashboard') loadDashboard();
+    if (name === 'faq') loadFaq();
+    if (name === 'inquiry') loadInquiry();
+    if (name === 'notice') loadNotice();
+    if (name === 'users') loadUsers();
+    if (name === 'adminlogs') loadAdminLogs();
+}
+
+// ── 대시보드 ──
+async function loadDashboard() {
+    const res = await fetch('/api/admin/stats');
+    const data = await res.json();
+    if (data.status === 'success') {
+        document.getElementById('stat-users').innerText = data.user_count;
+        document.getElementById('stat-expenses').innerText = data.expense_count;
+        document.getElementById('stat-inquiries').innerText = data.pending_inquiry_count;
+        document.getElementById('stat-faqs').innerText = data.faq_count;
+        const badge = document.getElementById('inquiry-badge');
+        if (data.pending_inquiry_count > 0) {
+            badge.innerText = data.pending_inquiry_count;
+            badge.style.display = 'inline';
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+
+    const inqRes = await fetch('/api/admin/inquiries');
+    const inqData = await inqRes.json();
+    if (inqData.status === 'success') {
+        const recent = inqData.data;
+        document.getElementById('dashboard-inquiry-list').innerHTML = recent.length === 0
+            ? '<p style="color:gray; font-size:0.85rem;">문의가 없습니다.</p>'
+            : `<table>
+                <thead><tr><th>제목</th><th>이메일</th><th>상태</th><th>날짜</th></tr></thead>
+                <tbody>${recent.map(i => `
+                    <tr>
+                        <td>${i.title}</td>
+                        <td style="color:var(--gray-500);">${i.user_email || '-'}</td>
+                        <td><span class="badge ${i.status === '답변 완료' ? 'done' : 'pending'}">${i.status || '대기중'}</span></td>
+                        <td style="color:var(--gray-400); font-size:0.78rem;">${new Date(i.created_at).toLocaleDateString('ko-KR')}</td>
+                    </tr>`).join('')}
+                </tbody>
+            </table>`;
+    }
+    // 탈퇴 통계
+const wdRes = await fetch('/api/admin/withdrawal_stats');
+const wdData = await wdRes.json();
+if (wdData.status === 'success') {
+    const total = wdData.total;
+    const volPct = total > 0 ? ((wdData.voluntary / total) * 100).toFixed(1) : 0;
+    const forPct = total > 0 ? ((wdData.forced / total) * 100).toFixed(1) : 0;
+    document.getElementById('withdrawal-stats').innerHTML = `
+        <div style="flex:1; min-width:120px; background:#eff6ff; border-radius:10px; padding:16px; text-align:center;">
+            <div style="font-size:0.78rem; color:#6b7280; margin-bottom:6px;">🔵 자진탈퇴</div>
+            <div style="font-size:1.6rem; font-weight:700; color:#2563eb;">${wdData.voluntary}</div>
+            <div style="font-size:0.75rem; color:#9ca3af;">${volPct}%</div>
+        </div>
+        <div style="flex:1; min-width:120px; background:#fef2f2; border-radius:10px; padding:16px; text-align:center;">
+            <div style="font-size:0.78rem; color:#6b7280; margin-bottom:6px;">🔴 강제탈퇴</div>
+            <div style="font-size:1.6rem; font-weight:700; color:#dc2626;">${wdData.forced}</div>
+            <div style="font-size:0.75rem; color:#9ca3af;">${forPct}%</div>
+        </div>
+        <div style="flex:1; min-width:120px; background:#f9fafb; border-radius:10px; padding:16px; text-align:center;">
+            <div style="font-size:0.78rem; color:#6b7280; margin-bottom:6px;">전체 탈퇴</div>
+            <div style="font-size:1.6rem; font-weight:700; color:#374151;">${total}</div>
+            <div style="font-size:0.75rem; color:#9ca3af;">100%</div>
+        </div>
+    `;
+}
+   setSignupRange(30);
+}
+
+// ── 회원 가입 추이 차트 ──
+let signupChartInstance = null;
+
+function setSignupRange(days) {
+    ['30','180','365'].forEach(d => {
+        const btn = document.getElementById(`range-${d}`);
+        if (btn) btn.className = `btn ${String(d) == String(days) ? 'btn-primary' : 'btn-gray'}`;
+    });
+    loadSignupChart(days);
+}
+
+
+async function loadSignupChart(days) {
+    if (!cachedUsers) {
+        const res = await fetch('/api/admin/users');
+        const data = await res.json();
+        if (data.status !== 'success') return;
+        cachedUsers = data.data;
+    }
+
+    const now = new Date();
+    const labels = [];       // 실제 날짜 키 (YYYY-MM-DD)
+    const displayLabels = []; // 화면에 표시할 레이블
+    const counts = {};
+
+    if (days === 30) {
+        // 1달: 1일~말일 (이번 달 기준)
+        const year = now.getFullYear();
+        const month = now.getMonth();
+        const lastDay = new Date(year, month + 1, 0).getDate();
+        for (let d = 1; d <= lastDay; d++) {
+            const key = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+            labels.push(key);
+            displayLabels.push(String(d));
+            counts[key] = 0;
+        }
+    } else {
+        // 6개월 or 1년: 월별로 집계
+        const months = days === 180 ? 6 : 12;
+        for (let i = months - 1; i >= 0; i--) {
+            const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+            labels.push(key);
+            displayLabels.push(`${d.getMonth()+1}월`);
+            counts[key] = 0;
+        }
+        // 월별 집계
+        cachedUsers.forEach(u => {
+            const joinMonth = u.created_at ? u.created_at.substring(0, 7) : null;
+            if (joinMonth && counts[joinMonth] !== undefined) counts[joinMonth]++;
+        });
+
+        const values = labels.map(l => counts[l]);
+        const totalNew = values.reduce((a, b) => a + b, 0);
+
+        const labelEl = document.getElementById('signup-range-label');
+        if (labelEl) labelEl.innerText = `(최근 ${days === 180 ? '6개월' : '1년'}, +${totalNew}명)`;
+
+        const ctx = document.getElementById('signupChart');
+        if (!ctx) return;
+        if (signupChartInstance) signupChartInstance.destroy();
+
+        signupChartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: displayLabels,
+                datasets: [{
+                    label: '가입자 수',
+                    data: values,
+                    backgroundColor: 'rgba(47, 128, 237, 0.5)',
+                    borderColor: '#2F80ED',
+                    borderWidth: 1,
+                    borderRadius: 4,
+                    borderSkipped: false,
+                    barPercentage: 0.6,
+                    categoryPercentage: 0.8,
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            title: (items) => displayLabels[items[0].dataIndex],
+                            label: (item) => ` ${item.raw}명 가입`
+                        }
+                    }
+                },
+                scales: {
+                    y: { beginAtZero: true, ticks: { stepSize: 1, precision: 0 }, grid: { color: '#f3f4f6' } },
+                    x: { grid: { display: false }, ticks: { maxRotation: 0 } }
+                }
+            }
+        });
+
+        const maxVal = Math.max(...values);
+        const maxLabel = displayLabels[values.indexOf(maxVal)];
+        const avgVal = (totalNew / (days === 180 ? 6 : 12)).toFixed(1);
+        const detailEl = document.getElementById('signup-detail');
+        if (detailEl) {
+            detailEl.innerHTML = totalNew === 0
+                ? '해당 기간 내 신규 가입이 없습니다.'
+                : `📅 최다 가입: <b>${maxLabel}</b> (${maxVal}명) &nbsp;|&nbsp; 월 평균: <b>${avgVal}명</b>`;
+        }
+        return;
+    }
+
+    // 1달 처리
+    cachedUsers.forEach(u => {
+        const joinDate = u.created_at ? u.created_at.substring(0, 10) : null;
+        if (joinDate && counts[joinDate] !== undefined) counts[joinDate]++;
+    });
+
+    const values = labels.map(l => counts[l]);
+    const totalNew = values.reduce((a, b) => a + b, 0);
+
+    const labelEl = document.getElementById('signup-range-label');
+    if (labelEl) labelEl.innerText = `(이번 달, +${totalNew}명)`;
+
+    const ctx = document.getElementById('signupChart');
+    if (!ctx) return;
+    if (signupChartInstance) signupChartInstance.destroy();
+
+    signupChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: displayLabels,
+            datasets: [{
+                label: '가입자 수',
+                data: values,
+                backgroundColor: 'rgba(47, 128, 237, 0.5)',
+                borderColor: '#2F80ED',
+                borderWidth: 1,
+                borderRadius: 4,
+                borderSkipped: false,
+                barPercentage: 0.7,
+                categoryPercentage: 0.9,
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        title: (items) => labels[items[0].dataIndex],
+                        label: (item) => ` ${item.raw}명 가입`
+                    }
+                }
+            },
+            scales: {
+                y: { beginAtZero: true, ticks: { stepSize: 1, precision: 0 }, grid: { color: '#f3f4f6' } },
+                x: { grid: { display: false }, ticks: { maxRotation: 0 } }
+            }
+        }
+    });
+
+    const maxVal = Math.max(...values);
+    const maxDate = labels[values.indexOf(maxVal)];
+    const avgVal = (totalNew / labels.length).toFixed(1);
+    const detailEl = document.getElementById('signup-detail');
+    if (detailEl) {
+        detailEl.innerHTML = totalNew === 0
+            ? '이번 달 신규 가입이 없습니다.'
+            : `📅 최다 가입일: <b>${maxDate}</b> (${maxVal}명) &nbsp;|&nbsp; 일 평균: <b>${avgVal}명</b>`;
+    }
+}
+// ── FAQ ──
+async function loadFaq() {
+    const res = await fetch('/api/get_faq');
+    const data = await res.json();
+    const list = document.getElementById('faq-list');
+    if (data.status !== 'success' || data.data.length === 0) {
+        list.innerHTML = '<p style="color:gray; font-size:0.85rem;">등록된 FAQ가 없습니다.</p>';
+        return;
+    }
+    list.innerHTML = `<table>
+        <thead><tr><th style="width:40%">질문</th><th>답변</th><th style="width:160px">작업</th></tr></thead>
+        <tbody>${data.data.map(f => `
+            <tr id="faq-row-${f.id}">
+                <td style="font-weight:500;">${f.question}</td>
+                <td>
+                    ${f.answer
+                        ? `<div class="answer-box">${f.answer}</div>
+                           <div style="margin-top:6px; display:flex; gap:6px;">
+                               <input type="text" id="ans-${f.id}" value="${f.answer}" placeholder="답변 수정">
+                               <button class="btn btn-primary" onclick="submitAnswer('${f.id}')">수정</button>
+                           </div>`
+                        : `<div style="display:flex; gap:6px;">
+                               <input type="text" id="ans-${f.id}" placeholder="답변 입력">
+                               <button class="btn btn-primary" onclick="submitAnswer('${f.id}')">등록</button>
+                           </div>`
+                    }
+                </td>
+                <td>
+                    <button class="btn btn-danger" onclick="deleteFaq('${f.id}')">삭제</button>
+                </td>
+            </tr>`).join('')}
+        </tbody>
+    </table>`;
+}
+
+async function submitAnswer(faqId) {
+    const answer = document.getElementById(`ans-${faqId}`).value;
+    if (!answer) return alert("답변을 입력하세요.");
+    const res = await fetch('/api/admin/answer_faq', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ faq_id: faqId, answer })
+    });
+    const data = await res.json();
+    if (data.status === 'success') { alert("답변이 등록되었습니다."); loadFaq(); }
+    else alert("오류: " + data.message);
+}
+
+async function deleteFaq(faqId) {
+    if (!confirm("이 FAQ를 삭제하시겠습니까?")) return;
+    const res = await fetch('/api/admin/delete_faq', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ faq_id: faqId })
+    });
+    const data = await res.json();
+    if (data.status === 'success') { alert("삭제되었습니다."); loadFaq(); }
+    else alert("오류: " + data.message);
+}
+
+// ── 1:1 문의 ──
+async function loadInquiry() {
+    const res = await fetch('/api/admin/inquiries');
+    const data = await res.json();
+    const list = document.getElementById('inquiry-list');
+    if (data.status !== 'success' || data.data.length === 0) {
+        list.innerHTML = '<p style="color:gray; font-size:0.85rem;">문의가 없습니다.</p>';
+        return;
+    }
+    list.innerHTML = data.data.map(i => `
+        <div style="border:1px solid #e5e7eb; border-radius:10px; padding:16px; margin-bottom:12px;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+                <div>
+                    <span style="font-weight:600; font-size:0.95rem;">${i.title}</span>
+                    <span style="margin-left:10px; font-size:0.78rem; color:#9ca3af;">${i.user_email || '-'}</span>
+                </div>
+                <span class="badge ${i.status === '답변 완료' ? 'done' : 'pending'}">${i.status || '답변 대기'}</span>
+            </div>
+            <p style="font-size:0.85rem; color:#6b7280; margin-bottom:10px; line-height:1.6; background:#f9fafb; padding:10px; border-radius:7px;">${i.content}</p>
+            ${i.answer ? `<div class="answer-box" style="margin-bottom:10px;">💬 ${i.answer}</div>` : ''}
+            <div style="display:flex; justify-content:flex-end; margin-top:8px;">
+                <button class="btn btn-primary" style="font-size:0.78rem;" onclick="toggleReplyBox('${i.id}')">
+                    ${i.answer ? '✏️ 답변 수정' : '💬 답변 등록'}
+                </button>
+            </div>
+            <div id="reply-box-${i.id}" style="display:none; margin-top:10px;">
+                <div style="display:flex; gap:8px;">
+                    <input type="text" id="inq-ans-${i.id}" placeholder="답변 입력" value="${i.answer || ''}"
+                        data-email="${i.user_email || ''}" data-title="${i.title || ''}">
+                    <button class="btn btn-success" onclick="submitInquiryAnswer('${i.id}')">등록</button>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function toggleReplyBox(id) {
+    const box = document.getElementById(`reply-box-${id}`);
+    box.style.display = box.style.display === 'none' ? 'block' : 'none';
+}
+
+async function submitInquiryAnswer(inquiryId) {
+    const input = document.getElementById(`inq-ans-${inquiryId}`);
+    const answer = input.value;
+    if (!answer) return alert("답변을 입력하세요.");
+    const email = input.dataset.email;
+    const title = input.dataset.title;
+    const res = await fetch('/api/admin/answer_inquiry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inquiry_id: inquiryId, answer })
+    });
+    const data = await res.json();
+    if (data.status === 'success') {
+        try {
+            await emailjs.send('service_25931xh', 'template_h4i8ezl', {
+                title: `[답변] ${title}`,
+                email: email,
+                name: email,
+                message: answer
+            });
+            alert("답변이 등록되고 이메일이 발송되었습니다.");
+        } catch (err) {
+            alert("답변은 등록됐지만 이메일 발송에 실패했습니다.");
+        }
+        await updateInquiryBadge();
+        loadInquiry();
+    } else {
+        alert("오류: " + data.message);
+    }
+}
+
+// ── 공지사항 ──
+async function loadNotice() {
+    const res = await fetch('/api/admin/notices');
+    const data = await res.json();
+    const list = document.getElementById('notice-list');
+    if (data.status !== 'success' || data.data.length === 0) {
+        list.innerHTML = '<p style="color:gray; font-size:0.85rem;">등록된 공지사항이 없습니다.</p>';
+        return;
+    }
+    list.innerHTML = data.data.map(n => `
+        <div class="notice-item">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <div class="notice-title">${n.is_banner ? '📌 ' : ''}${n.title}</div>
+                    <div class="notice-content">${n.content}</div>
+                </div>
+                <div style="display:flex; gap:6px; align-items:center;">
+                    <span style="font-size:0.75rem; color:#aaa;">${new Date(n.created_at).toLocaleDateString('ko-KR')}</span>
+                    <button class="btn btn-primary" onclick="toggleEditNotice('${n.id}')">수정</button>
+                    <button class="btn btn-danger" onclick="deleteNotice('${n.id}')">삭제</button>
+                </div>
+            </div>
+            <div id="edit-form-${n.id}" style="display:none; margin-top:12px; padding-top:12px; border-top:1px solid #f0f0f0;">
+                <input type="text" id="edit-title-${n.id}" value="${n.title}" placeholder="제목 수정" style="margin-bottom:8px;">
+                <textarea id="edit-content-${n.id}" style="height:70px; resize:none; margin-bottom:8px;">${n.content}</textarea>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <label style="display:flex; align-items:center; gap:6px; font-size:0.82rem; cursor:pointer;">
+                        <input type="checkbox" id="edit-banner-${n.id}" ${n.is_banner ? 'checked' : ''} style="width:auto;">
+                        💡 배너로 표시
+                    </label>
+                    <div style="display:flex; gap:6px;">
+                        <button class="btn btn-gray" onclick="toggleEditNotice('${n.id}')">취소</button>
+                        <button class="btn btn-primary" onclick="updateNotice('${n.id}')">저장</button>
+                    </div>
+                </div>
+            </div>
+        </div>`).join('');
+}
+
+function toggleEditNotice(id) {
+    const form = document.getElementById(`edit-form-${id}`);
+    form.style.display = form.style.display === 'none' ? 'block' : 'none';
+}
+
+async function updateNotice(id) {
+    const title = document.getElementById(`edit-title-${id}`).value;
+    const content = document.getElementById(`edit-content-${id}`).value;
+    const isBanner = document.getElementById(`edit-banner-${id}`).checked;
+    if (!title || !content) return alert("제목과 내용을 입력하세요.");
+    const res = await fetch('/api/admin/update_notice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, title, content, is_banner: isBanner })
+    });
+    const data = await res.json();
+    if (data.status === 'success') { alert("수정되었습니다."); loadNotice(); }
+    else alert("오류: " + data.message);
+}
+
+async function saveNotice() {
+    const title = document.getElementById('noticeTitle').value;
+    const content = document.getElementById('noticeContent').value;
+    const isBanner = document.getElementById('isBanner').checked;
+    if (!title || !content) return alert("제목과 내용을 입력하세요.");
+    const res = await fetch('/api/admin/add_notice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, content, is_banner: isBanner })
+    });
+    const data = await res.json();
+    if (data.status === 'success') {
+        alert("공지사항이 등록되었습니다.");
+        document.getElementById('noticeTitle').value = '';
+        document.getElementById('noticeContent').value = '';
+        document.getElementById('isBanner').checked = false;
+        loadNotice();
+    } else alert("오류: " + data.message);
+}
+
+async function deleteNotice(id) {
+    if (!confirm("공지사항을 삭제하시겠습니까?")) return;
+    const res = await fetch('/api/admin/delete_notice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+    });
+    const data = await res.json();
+    if (data.status === 'success') { alert("삭제되었습니다."); loadNotice(); }
+    else alert("오류: " + data.message);
+}
+
+// ── 회원 목록 ──
+async function loadUsers() {
+    const res = await fetch('/api/admin/users');
+    const data = await res.json();
+    const tbody = document.getElementById('user-list');
+    if (data.status !== 'success' || data.data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="color:gray; text-align:center;">회원이 없습니다.</td></tr>';
+    } else {
+        tbody.innerHTML = data.data.map(u => `
+            <tr>
+                <td style="font-weight:500;">${u.display_name || '-'}</td>
+                <td style="color:var(--gray-500);">${u.email}</td>
+                <td style="color:var(--gray-400); font-size:0.8rem;">${new Date(u.created_at).toLocaleDateString('ko-KR')}</td>
+                <td style="color:var(--gray-400); font-size:0.8rem;">${u.last_sign_in_at !== '-' ? new Date(u.last_sign_in_at).toLocaleDateString('ko-KR') : '-'}</td>
+                <td>
+                    ${u.email !== 'ljy203045@gmail.com'
+                        ? `<button class="btn btn-danger" onclick="forceDeleteUser('${u.id}', '${u.email}')">강제 탈퇴</button>`
+                        : '<span style="color:var(--gray-400); font-size:0.78rem;">관리자</span>'
+                    }
+                </td>
+            </tr>`).join('');
+    }
+
+    const wRes = await fetch('/api/admin/withdrawn_users');
+    const wData = await wRes.json();
+    const wTbody = document.getElementById('withdrawn-list');
+    if (wData.status !== 'success' || wData.data.length === 0) {
+        wTbody.innerHTML = '<tr><td colspan="4" style="color:gray; text-align:center;">탈퇴 회원이 없습니다.</td></tr>';
+    } else {
+        wTbody.innerHTML = wData.data.map(u => {
+            const withdrawTime = new Date(u.withdrawn_at);
+            const now = new Date();
+            const diff = (now - withdrawTime) / (1000 * 60 * 60);
+            const canRejoin = diff >= 48;
+            const isAdmin = u.reason === '관리자삭제';
+            return `
+                <tr>
+                    <td style="color:var(--gray-500);">${u.email}</td>
+                    <td style="color:var(--gray-400); font-size:0.8rem;">${withdrawTime.toLocaleString('ko-KR')}</td>
+                    <td>
+                        <span class="badge ${isAdmin ? 'pending' : 'done'}" style="background:${isAdmin ? '#fef2f2' : '#eff6ff'}; color:${isAdmin ? '#dc2626' : '#2563eb'};">
+                            ${isAdmin ? '🔴 관리자 삭제' : '🔵 자진탈퇴'}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge ${canRejoin ? 'done' : 'pending'}">
+                            ${canRejoin ? '재가입 가능' : '재가입 불가'}
+                        </span>
+                    </td>
+                </tr>`;
+        }).join('');
+    }
+}
+
+async function forceDeleteUser(userId, email) {
+    if (!confirm(`${email} 회원을 강제 탈퇴시키겠습니까?`)) return;
+    if (!confirm(`⚠️ 최종 확인\n${email} 회원의 모든 데이터가 삭제됩니다.\n정말 진행하시겠습니까?`)) return;
+    const res = await fetch('/api/admin/delete_user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId, email: email })
+    });
+    const data = await res.json();
+    if (data.status === 'success') {
+        alert("강제 탈퇴 처리되었습니다.");
+        loadUsers();
+    } else {
+        alert("오류: " + data.message);
+    }
+}
+
+// ── 관리자 로그인 기록 ──
+async function loadAdminLogs() {
+    const res = await fetch('/api/admin/login_logs');
+    const data = await res.json();
+    const tbody = document.getElementById('adminlog-list');
+    if (data.status !== 'success' || !data.data || data.data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="color:gray; text-align:center; padding:20px;">로그인 기록이 없습니다.</td></tr>';
+        return;
+    }
+    tbody.innerHTML = data.data.map(log => {
+        const date = new Date(log.logged_at).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' });
+        const isSuccess = log.status !== 'fail';
+        return `
+            <tr>
+                <td>${date}</td>
+                <td style="color:var(--gray-500); font-size:0.82rem;">${log.ip || '-'}</td>
+                <td>${log.device_type || '-'}</td>
+                <td>${log.browser || '-'}</td>
+                <td><span class="badge ${isSuccess ? 'done' : 'pending'}">${isSuccess ? '✅ 성공' : '❌ 실패'}</span></td>
+            </tr>`;
+    }).join('');
+}
+
+async function adminLogout() {
+    if (!confirm("로그아웃 하시겠습니까?")) return;
+    await fetch('/api/admin/logout', { method: 'POST' });
+    location.href = '/admin/login';
+}
+// ... 위에 adminLogout 함수 ...
+
+async function updateInquiryBadge() {
+    const res = await fetch('/api/admin/stats');
+    const data = await res.json();
+    if (data.status === 'success') {
+        const badge = document.getElementById('inquiry-badge');
+        const count = data.pending_inquiry_count;
+        if (count > 0) {
+            badge.innerText = count;
+            badge.style.display = 'inline';
+        } else {
+            badge.style.display = 'none';
+        }
+        document.getElementById('stat-inquiries').innerText = count;
+    }
+}
+
+window.onload = loadDashboard;
+</script>
+</body>
+</html>

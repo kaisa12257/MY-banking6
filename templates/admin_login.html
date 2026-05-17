@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>관리자 로그인 - My-Banking</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #1f2937;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        .login-box {
+            background: white;
+            border-radius: 12px;
+            padding: 40px 36px;
+            width: 100%;
+            max-width: 380px;
+            text-align: center;
+        }
+        .login-box h1 { font-size: 1.1rem; font-weight: 700; color: #2563eb; margin-bottom: 4px; }
+        .login-box p { font-size: 0.8rem; color: #9ca3af; margin-bottom: 28px; }
+        input {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1px solid #e5e7eb;
+            border-radius: 7px;
+            font-size: 0.9rem;
+            margin-bottom: 12px;
+            outline: none;
+        }
+        input:focus { border-color: #2563eb; }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 7px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 4px;
+        }
+        button:hover { background: #1d4ed8; }
+        .error { color: #ef4444; font-size: 0.82rem; margin-top: 10px; display: none; }
+    </style>
+</head>
+<body>
+    <div class="login-box">
+        <h1>💰 My-Banking</h1>
+        <p>관리자 전용 로그인</p>
+     <input type="text" id="admin-id" placeholder="관리자 아이디" autocomplete="off">
+<input type="password" id="admin-pw" placeholder="비밀번호" autocomplete="new-password">
+        <button onclick="adminLogin()">로그인</button>
+        <div class="error" id="error-msg">아이디 또는 비밀번호가 올바르지 않습니다.</div>
+    </div>
+
+    <script>
+        async function adminLogin() {
+            const id = document.getElementById('admin-id').value;
+            const pw = document.getElementById('admin-pw').value;
+
+            if (!id || !pw) {
+                document.getElementById('error-msg').style.display = 'block';
+                return;
+            }
+
+            const res = await fetch('/api/admin/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, pw })
+            });
+            const data = await res.json();
+
+            if (data.status === 'success') {
+                location.href = '/admin';
+            } else {
+                document.getElementById('error-msg').style.display = 'block';
+            }
+        }
+
+        // 엔터키로 로그인
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Enter') adminLogin();
+        });
+    </script>
+</body>
+</html>

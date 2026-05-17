@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>고객지원 - My-Banking</title>
@@ -11,7 +12,7 @@
 <body>
 <header style="justify-content: space-between;">
     <button onclick="history.back()" style="background:none; border:none; color:white; font-size:1.3rem; cursor:pointer;">◀</button>
-    <span style="color:white; font-weight:bold;">고객지원 및 정보</span>
+    <span style="color:white; font-weight:bold;">고객지원</span>
     <div></div>
 </header>
 
@@ -193,7 +194,13 @@ async function submitFaq() {
     }
 }
 
-window.onload = loadFaq;
+window.onload = function() {
+    if (performance.navigation.type === 1) {
+        location.href = '/';
+        return;
+    }
+    loadFaq();
+};
 </script>
 </body>
 </html>

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>공지사항 - My-Banking</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header style="justify-content: space-between;">
+    <button onclick="history.back()" style="background:none; border:none; color:white; font-size:1.3rem; cursor:pointer;">◀</button>
+    <span style="color:white; font-weight:bold;">📢 공지사항</span>
+    <div></div>
+</header>
+
+<div style="max-width:600px; margin:30px auto; padding:0 15px;">
+    <div id="noticeList"><p style="color:gray; text-align:center;">불러오는 중...</p></div>
+</div>
+
+<!-- 공지 상세 모달 -->
+<div id="noticeModal" style="display:none; position:fixed; z-index:200; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
+    <div style="background:white; border-radius:15px; padding:25px; width:90%; max-width:500px; max-height:80vh; overflow-y:auto;">
+        <h3 id="noticeModalTitle" style="margin-bottom:15px;"></h3>
+        <p id="noticeModalDate" style="font-size:0.8rem; color:#aaa; margin-bottom:15px;"></p>
+        <div id="noticeModalContent" style="font-size:0.9rem; line-height:1.8; color:#555;"></div>
+        <button onclick="closeNoticeModal()" style="margin-top:20px; width:100%; padding:12px; background:var(--dark); color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">닫기</button>
+    </div>
+</div>
+
+<script>
+function openNoticeModal(title, content, date) {
+    document.getElementById('noticeModalTitle').innerText = '📢 ' + title;
+    document.getElementById('noticeModalContent').innerText = content;
+    document.getElementById('noticeModalDate').innerText = date;
+    document.getElementById('noticeModal').style.display = 'flex';
+}
+
+function closeNoticeModal() {
+    document.getElementById('noticeModal').style.display = 'none';
+}
+
+async function loadNotices() {
+    const res = await fetch('/api/get_notices');
+    const data = await res.json();
+    const list = document.getElementById('noticeList');
+
+    if (data.status !== 'success' || data.data.length === 0) {
+        list.innerHTML = '<p style="color:gray; text-align:center;">등록된 공지사항이 없습니다.</p>';
+        return;
+    }
+
+    list.innerHTML = data.data.map(n => `
+        <div class="card" style="cursor:pointer;" onclick="openNoticeModal('${n.title.replace(/'/g, "\\'")}', '${n.content.replace(/'/g, "\\'")}', '${new Date(n.created_at).toLocaleDateString('ko-KR')}')">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h4 style="margin:0; font-size:0.95rem;">${n.is_banner ? '📌 ' : ''}${n.title}</h4>
+                <span style="font-size:0.75rem; color:#aaa;">${new Date(n.created_at).toLocaleDateString('ko-KR')}</span>
+            </div>
+            <p style="font-size:0.82rem; color:#888; margin-top:8px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">${n.content}</p>
+        </div>
+    `).join('');
+}
+window.onload = function() {
+    if (performance.navigation.type === 1) {
+        location.href = '/';
+        return;
+    }
+    loadNotices();
+};
+</script>
+</body>
+</html>
