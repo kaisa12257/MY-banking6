@@ -6,6 +6,33 @@
     <title>My-Banking 관리자</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
+        /* 모바일 대응 */
+@media (max-width: 768px) {
+    #sidebar { display: none; }
+    #main { margin-left: 0; }
+    
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    table { 
+        font-size: 0.75rem;
+    }
+    
+    th, td {
+        padding: 8px 6px;
+    }
+    
+    #content { padding: 15px; }
+    
+    #topbar { padding: 0 15px; }
+}
+
+@media (max-width: 480px) {
+    .stats-grid {
+        grid-template-columns: repeat(1, 1fr);
+    }
+}
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
             --primary: #2F80ED;
@@ -250,10 +277,13 @@
 
 <!-- 메인 -->
 <div id="main">
-    <div id="topbar">
-        <h2 id="topbar-title">통계 대시보드</h2>
-        <span class="admin-badge">🔐 관리자</span>
-    </div>
+   <div id="topbar">
+    <button onclick="toggleMobileMenu()" 
+        id="menuBtn"
+        style="display:none; background:none; border:none; font-size:1.5rem; cursor:pointer;">☰</button>
+    <h2 id="topbar-title">통계 대시보드</h2>
+    <span class="admin-badge">🔐 관리자</span>
+</div>
 
     <div id="content">
 
@@ -424,12 +454,18 @@ function showSection(name) {
     document.getElementById('topbar-title').innerText = TITLES[name];
     event.currentTarget.classList.add('active');
 
+
+    if (window.innerWidth <= 768) {
+        document.getElementById('sidebar').style.display = 'none';
+    }
+
     if (name === 'dashboard') loadDashboard();
     if (name === 'faq') loadFaq();
     if (name === 'inquiry') loadInquiry();
     if (name === 'notice') loadNotice();
     if (name === 'users') loadUsers();
     if (name === 'adminlogs') loadAdminLogs();
+
 }
 
 // ── 대시보드 ──
@@ -1003,8 +1039,17 @@ async function updateInquiryBadge() {
         document.getElementById('stat-inquiries').innerText = count;
     }
 }
+function toggleMobileMenu() {
+    const sidebar = document.getElementById('sidebar');
+    sidebar.style.display = sidebar.style.display === 'block' ? 'none' : 'block';
+}
+
+if (window.innerWidth <= 768) {
+    document.getElementById('menuBtn').style.display = 'block';
+}
 
 window.onload = loadDashboard;
+
 </script>
 </body>
 </html>
