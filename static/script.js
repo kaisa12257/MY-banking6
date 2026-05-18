@@ -1,6 +1,5 @@
+const API_BASE = '';
 let viewDate = new Date();
-
-
 // ↓ 여기에 추가
 function getViewMonthRange() {
     const startDay = parseInt(localStorage.getItem('monthStartDay') || '1');
@@ -28,7 +27,11 @@ let fixedExpenses = [];
 let monthlyBudgets = {};
 
 function openModal(id) {
-    document.getElementById(id).style.display = 'flex';
+    if (id === 'settingsModal') {
+        document.getElementById(id).style.display = 'block';
+    } else {
+        document.getElementById(id).style.display = 'flex';
+    }
 }
 function closeModal(id) {
     document.getElementById(id).style.display = 'none';
