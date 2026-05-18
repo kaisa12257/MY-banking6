@@ -1,4 +1,3 @@
-from flask_session import Session
 import random
 from datetime import datetime, timedelta, timezone
 from flask import Flask, render_template, request, jsonify, session, redirect
@@ -8,10 +7,8 @@ app = Flask(__name__)
 app.secret_key = "money_guardian_key"
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['SESSION_COOKIE_SECURE'] = True
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
-app.config['SESSION_TYPE'] = 'filesystem'  
-app.config['SESSION_PERMANENT'] = True      
-Session(app) 
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7) 
+
 # =========================
 # Supabase 설정
 # =========================
