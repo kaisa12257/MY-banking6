@@ -797,9 +797,9 @@ def change_name():
     if not new_name:
         return jsonify({"status": "error", "message": "이름을 입력하세요."}), 400
     try:
-        supabase.auth.admin.update_user_by_id(
-            session['user_id'],
-            {"user_metadata": {"display_name": new_name}}
+        supabase.auth.update_user(
+            
+            {"data": {"display_name": new_name}}
         )
         session['user_name'] = new_name
         return jsonify({"status": "success"})
