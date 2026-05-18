@@ -5,7 +5,9 @@ from supabase import create_client, Client, ClientOptions
 
 app = Flask(__name__)
 app.secret_key = "money_guardian_key"
-
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_SECURE'] = True
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
 # =========================
 # Supabase 설정
 # =========================
@@ -72,6 +74,7 @@ def do_login():
             "password": data['password']
         })
         user = res.user
+        session.permanent = True
         session['user_id'] = user.id
         session['user_name'] = user.user_metadata.get('display_name', '사용자')
         session['user_email'] = user.email
