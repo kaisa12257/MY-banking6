@@ -439,8 +439,6 @@ def get_inquiries():
         return jsonify({"status": "error", "message": str(e)}), 500
 @app.route('/inquiry')
 def inquiry_page():
-    if 'user_id' not in session:
-        return redirect('/')
     return render_template('inquiry.html')
 @app.route('/api/get_faq', methods=['GET'])
 def get_faq():
