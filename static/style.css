@@ -243,3 +243,54 @@ body.dark .settings-footer { background: #0f0f1a; }
 body.dark .settings-section h4 { color: #777; border-bottom: 1px solid #333; }
 body.dark .setting-item { color: #eee; }
 body.dark .btn-logout-full { background: #333; color: #eee; }
+/* ===== 다크모드 설정창 수정 ===== */
+body.dark #settingsModal {
+    background: #1a1a2e;
+}
+body.dark #settingsModal .modal-content.settings-card {
+    background: #16213e;
+}
+body.dark .settings-header {
+    background: #0f0f1a;
+}
+body.dark .settings-body {
+    background: #16213e;
+    color: #eee;
+}
+body.dark .settings-section h4 {
+    color: #777;
+    border-bottom: 1px solid #333;
+}
+body.dark .setting-item {
+    color: #eee;
+    border-bottom: 1px solid #2a2a3e;
+}
+body.dark .setting-item:hover {
+    background: #1e2a3e;
+}
+body.dark #settings-sub-layer {
+    background: #16213e;
+    color: #eee;
+}
+body.dark .sub-layer-header {
+    background: #16213e;
+    color: #eee;
+    border-bottom: 1px solid #333;
+}
+body.dark #sub-layer-content {
+    background: #16213e;
+    color: #eee;
+}
+body.dark #sub-layer-content input,
+body.dark #sub-layer-content select,
+body.dark #sub-layer-content textarea {
+    background: #0f0f1a;
+    color: #eee;
+    border: 1px solid #444;
+}
+body.dark .item-value {
+    color: #aaa;
+}
+body.dark .profile-avatar {
+    background: rgba(255,255,255,0.1);
+}

@@ -106,8 +106,8 @@ def reset_password_request():
         return jsonify({"status": "error", "message": "이메일을 입력하세요."}), 400
     
     try:
-        import os
-        base_url = os.environ.get("BASE_URL", "http://127.0.0.1:5000")
+      
+        base_url = request.host_url.rstrip('/')
         supabase.auth.reset_password_for_email(email, {
             'redirect_to': f'{base_url}/reset-password'
         })
