@@ -107,7 +107,7 @@ def reset_password_request():
     
     try:
         supabase.auth.reset_password_for_email(email, {
-            'redirect_to': 'https://my-banking-app-v2.onrender.com/reset-password'
+            'redirect_to': 'https://my-banking6-v2-0.onrender.com/reset-password'
         })
         return jsonify({"status": "success", "message": "이메일이 발송되었습니다."})
     except Exception as e:
