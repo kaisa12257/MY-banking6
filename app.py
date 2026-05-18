@@ -129,7 +129,22 @@ def do_logout():
     except:
         pass
     return jsonify({"status": "success"})
+@app.route('/api/reset-password-confirm', methods=['POST'])
+def reset_password_confirm():
+    data = request.json
+    access_token = data.get('access_token')
+    refresh_token = data.get('refresh_token')
+    new_password = data.get('password')
 
+    if not access_token or not new_password:
+        return jsonify({"status": "error", "message": "잘못된 요청입니다."}), 400
+
+    try:
+        supabase.auth.set_session(access_token, refresh_token)
+        supabase.auth.update_user({"password": new_password})
+        return jsonify({"status": "success"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": "링크가 만료되었거나 유효하지 않습니다."}), 400
 
 # =========================
 # 회원 탈퇴
