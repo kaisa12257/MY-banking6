@@ -106,11 +106,9 @@ def reset_password_request():
         return jsonify({"status": "error", "message": "이메일을 입력하세요."}), 400
     
     try:
-      
-      # 변경
-supabase.auth.reset_password_for_email(email, {
-    'redirect_to': 'https://my-banking-app-v2.onrender.com/reset-password'
-})
+        supabase.auth.reset_password_for_email(email, {
+            'redirect_to': 'https://my-banking-app-v2.onrender.com/reset-password'
+        })
         return jsonify({"status": "success", "message": "이메일이 발송되었습니다."})
     except Exception as e:
         error_msg = str(e)
@@ -119,7 +117,6 @@ supabase.auth.reset_password_for_email(email, {
         else:
             message = "이메일 발송 중 오류가 발생했습니다."
         return jsonify({"status": "error", "message": message}), 400
-
 
 @app.route('/api/logout', methods=['POST'])
 def do_logout():
