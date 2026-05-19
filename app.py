@@ -130,6 +130,16 @@ def do_logout():
     except:
         pass
     return jsonify({"status": "success"})
+@app.route('/api/check_session', methods=['GET'])
+def check_session():
+    if 'user_id' not in session:
+        return jsonify({"status": "error"}), 401
+    return jsonify({
+        "status": "success",
+        "user_name": session.get('user_name'),
+        "user_email": session.get('user_email')
+    })
+
 @app.route('/api/reset-password-confirm', methods=['POST'])
 def reset_password_confirm():
     data = request.json
