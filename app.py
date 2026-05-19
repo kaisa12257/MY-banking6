@@ -866,7 +866,7 @@ def view_by_code():
     except Exception as e:
         print(f"view_by_code 에러: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
-        @app.route('/api/check_session', methods=['GET'])
+@app.route('/api/check_session', methods=['GET'])
 def check_session():
     if 'user_id' not in session:
         return jsonify({"status": "error"}), 401
