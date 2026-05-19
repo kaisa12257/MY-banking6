@@ -6,8 +6,8 @@ from supabase import create_client, Client, ClientOptions
 app = Flask(__name__)
 app.secret_key = "money_guardian_key"
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-app.config['SESSION_COOKIE_SECURE'] = True
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7) 
+app.config['SESSION_COOKIE_SECURE'] = False  # 로컬용
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 
 # =========================
 # Supabase 설정
@@ -799,9 +799,9 @@ def change_name():
     if not new_name:
         return jsonify({"status": "error", "message": "이름을 입력하세요."}), 400
     try:
-        supabase.auth.update_user(
-            
-            {"data": {"display_name": new_name}}
+        supabase.auth.admin.update_user_by_id(
+            session['user_id'],
+            {"user_metadata": {"display_name": new_name}}
         )
         session['user_name'] = new_name
         return jsonify({"status": "success"})

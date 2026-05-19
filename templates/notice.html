@@ -60,11 +60,8 @@ async function loadNotices() {
         </div>
     `).join('');
 }
+
 window.onload = function() {
-    if (performance.navigation.type === 1) {
-        location.href = '/';
-        return;
-    }
     loadNotices();
 };
 </script>
