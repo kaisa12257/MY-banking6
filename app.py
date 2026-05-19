@@ -806,7 +806,15 @@ def change_name():
         session['user_name'] = new_name
         return jsonify({"status": "success"})
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        # admin 실패시 일반 update 시도
+        try:
+            supabase.auth.update_user(
+                {"data": {"display_name": new_name}}
+            )
+            session['user_name'] = new_name
+            return jsonify({"status": "success"})
+        except Exception as e2:
+            return jsonify({"status": "error", "message": str(e2)}), 500
        
 
 @app.route('/api/get_share_code', methods=['GET'])
