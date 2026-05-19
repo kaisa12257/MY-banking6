@@ -1080,19 +1080,61 @@ function nextBanner() {
     bannerIndex = (bannerIndex + 1) % bannerList.length;
     showBanner(bannerIndex);
 }
-window.onload = function () {
-    if (!window.userData) {
-        if (document.getElementById('welcomeScreen')) document.getElementById('welcomeScreen').style.display = 'flex';
-        if (document.getElementById('topNav')) document.getElementById('topNav').style.display = 'none';
-        if (document.getElementById('mainContent')) document.getElementById('mainContent').style.display = 'none';
-        if (document.getElementById('userMenu')) document.getElementById('userMenu').style.display = 'none';
-    }
+
+window.onload = async function () {
     if (localStorage.getItem('theme') === 'dark') {
         document.body.classList.add('dark');
     }
+
+    // 세션 확인
+    try {
+        const res = await fetch('/api/check_session');
+        const data = await res.json();
+
+        if (data.status === 'success') {
+            window.userData = {
+                name: data.user_name,
+                email: data.user_email
+            };
+            document.getElementById('welcomeScreen').style.display = 'none';
+            document.getElementById('authBox').style.display = 'none';
+            document.getElementById('userMenu').style.display = 'block';
+            document.getElementById('topNav').style.display = 'flex';
+            document.getElementById('mainContent').style.display = 'block';
+            document.getElementById('backBtn').style.display = 'block';
+
+            initDate();
+            await loadBudgets();
+            await loadFixedList();
+            await loadList();
+            await loadGoal();
+            renderBudgetList();
+
+            fetch('/api/get_notices')
+                .then(r => r.json())
+                .then(d => {
+                    if (d.status === 'success') {
+                        bannerList = d.data.filter(n => n.is_banner);
+                        if (bannerList.length > 0) {
+                            document.getElementById('noticeBanner').style.display = 'block';
+                            showBanner(0);
+                            bannerTimer = setInterval(() => {
+                                bannerIndex = (bannerIndex + 1) % bannerList.length;
+                                showBanner(bannerIndex);
+                            }, 5000);
+                        }
+                    }
+                });
+        } else {
+            document.getElementById('welcomeScreen').style.display = 'flex';
+            document.getElementById('topNav').style.display = 'none';
+            document.getElementById('mainContent').style.display = 'none';
+            document.getElementById('userMenu').style.display = 'none';
+        }
+    } catch (e) {
+        document.getElementById('welcomeScreen').style.display = 'flex';
+    }
 };
-
-
 
 async function doFindEmail() {
     const name = document.getElementById('find_name').value.trim();
