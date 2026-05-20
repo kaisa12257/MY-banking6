@@ -6,7 +6,7 @@ from supabase import create_client, Client, ClientOptions
 app = Flask(__name__)
 app.secret_key = "money_guardian_key"
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-app.config['SESSION_COOKIE_SECURE'] = False  # 로컬용
+app.config['SESSION_COOKIE_SECURE'] = False
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 
 # =========================
