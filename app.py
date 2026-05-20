@@ -142,6 +142,9 @@ def check_session():
         "user_name": session.get('user_name'),
         "user_email": session.get('user_email')
     })
+@app.route('/static/manifest.json')
+def manifest():
+    return app.send_static_file('manifest.json')
 
 @app.route('/api/reset-password-confirm', methods=['POST'])
 def reset_password_confirm():
