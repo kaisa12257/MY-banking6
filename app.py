@@ -145,7 +145,9 @@ def check_session():
 @app.route('/static/manifest.json')
 def manifest():
     return app.send_static_file('manifest.json')
-
+@app.route('/static/safe-box.png')
+def safe_box_icon():
+    return app.send_static_file('safe-box.png')
 @app.route('/api/reset-password-confirm', methods=['POST'])
 def reset_password_confirm():
     data = request.json
