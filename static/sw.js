@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mybanking-v1';
+const CACHE_NAME = 'mybanking-v2';
 const urlsToCache = ['/', '/static/style.css', '/static/script.js'];
 
 self.addEventListener('install', e => {
