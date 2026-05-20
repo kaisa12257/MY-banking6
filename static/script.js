@@ -130,6 +130,8 @@ async function doLogin() {
             email: data.user_email,
             joinedAt: data.joined_at
         };
+        localStorage.setItem('user_name', data.user_name);
+    localStorage.setItem('user_email', data.user_email);
 
        
         document.getElementById('welcomeScreen').style.display = 'none';
@@ -185,6 +187,8 @@ await fetch('/api/add_login_log', {
 
 async function doLogout() {
     await fetch('/api/logout', { method: 'POST' });
+    localStorage.removeItem('user_name');
+    localStorage.removeItem('user_email');
     document.getElementById('backBtn').style.display = 'none';
     location.reload();
 }
@@ -1092,6 +1096,8 @@ window.onload = async function () {
         const data = await res.json();
 
         if (data.status === 'success') {
+            localStorage.setItem('user_name', data.user_name);
+            localStorage.setItem('user_email', data.user_email);
             window.userData = {
                 name: data.user_name,
                 email: data.user_email
@@ -1126,16 +1132,41 @@ window.onload = async function () {
                     }
                 });
         } else {
+            // 세션 없음 → localStorage 확인
+            const savedEmail = localStorage.getItem('user_email');
+            const savedName = localStorage.getItem('user_name');
+
+            if (savedEmail && savedName) {
+                // localStorage에 정보 있으면 로그인 모달 자동 열고 이메일 자동입력
+                document.getElementById('welcomeScreen').style.display = 'flex';
+                document.getElementById('topNav').style.display = 'none';
+                document.getElementById('mainContent').style.display = 'none';
+                document.getElementById('userMenu').style.display = 'none';
+                openModal('loginModal');
+                document.getElementById('l_em').value = savedEmail;
+            } else {
+                document.getElementById('welcomeScreen').style.display = 'flex';
+                document.getElementById('topNav').style.display = 'none';
+                document.getElementById('mainContent').style.display = 'none';
+                document.getElementById('userMenu').style.display = 'none';
+            }
+        }
+    } catch (e) {
+        const savedEmail = localStorage.getItem('user_email');
+        const savedName = localStorage.getItem('user_name');
+
+        if (savedEmail && savedName) {
             document.getElementById('welcomeScreen').style.display = 'flex';
             document.getElementById('topNav').style.display = 'none';
             document.getElementById('mainContent').style.display = 'none';
             document.getElementById('userMenu').style.display = 'none';
+            openModal('loginModal');
+            document.getElementById('l_em').value = savedEmail;
+        } else {
+            document.getElementById('welcomeScreen').style.display = 'flex';
         }
-    } catch (e) {
-        document.getElementById('welcomeScreen').style.display = 'flex';
     }
 };
-
 async function doFindEmail() {
     const name = document.getElementById('find_name').value.trim();
     if (!name) return alert("이름을 입력하세요.");
